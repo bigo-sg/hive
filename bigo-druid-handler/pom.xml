@@ -71,6 +71,12 @@
   </repositories>
 
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/org.jdbi/jdbi -->
+    <dependency>
+      <groupId>org.jdbi</groupId>
+      <artifactId>jdbi</artifactId>
+      <version>2.63.1</version>
+    </dependency>
     <!-- dependencies are always listed in sorted order by groupId, artifectId -->
     <!-- intra-project -->
     <dependency>
