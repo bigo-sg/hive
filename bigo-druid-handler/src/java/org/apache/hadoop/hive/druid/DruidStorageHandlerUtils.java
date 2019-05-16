@@ -50,6 +50,7 @@ import org.apache.druid.query.aggregation.FloatSumAggregatorFactory;
 import org.apache.druid.query.aggregation.LongSumAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.hll.HllSketchModule;
 import org.apache.druid.query.expression.*;
 import org.apache.druid.query.scan.ScanQuery;
 import org.apache.druid.query.select.SelectQueryConfig;
@@ -830,6 +831,7 @@ public final class DruidStorageHandlerUtils {
 
     // Default, all columns that are not metrics or timestamp, are treated as dimensions
     final List<DimensionSchema> dimensions = new ArrayList<>();
+    HllSketchModule.registerSerde();
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
     for (int i = 0; i < columnTypes.size(); i++) {
 
