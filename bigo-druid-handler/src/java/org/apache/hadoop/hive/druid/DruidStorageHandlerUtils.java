@@ -874,7 +874,6 @@ public final class DruidStorageHandlerUtils {
         continue;
       default:
         // Dimension
-        String dColumnName = columnNames.get(i);
         if (PrimitiveObjectInspectorUtils.getPrimitiveGrouping(primitiveCategory)
             != PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP
             && primitiveCategory != PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN) {
