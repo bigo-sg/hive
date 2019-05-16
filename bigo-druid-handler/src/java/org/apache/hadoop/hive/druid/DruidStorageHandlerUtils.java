@@ -48,6 +48,8 @@ import org.apache.druid.query.aggregation.AggregatorFactory;
 import org.apache.druid.query.aggregation.DoubleSumAggregatorFactory;
 import org.apache.druid.query.aggregation.FloatSumAggregatorFactory;
 import org.apache.druid.query.aggregation.LongSumAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
 import org.apache.druid.query.expression.*;
 import org.apache.druid.query.scan.ScanQuery;
 import org.apache.druid.query.select.SelectQueryConfig;
@@ -72,7 +74,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.conf.Constants;
+
+import org.apache.hadoop.hive.common.Constants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
 import org.apache.hadoop.hive.druid.json.AvroParseSpec;
@@ -798,8 +801,33 @@ public final class DruidStorageHandlerUtils {
         IndexSpec.DEFAULT_LONG_ENCODING);
   }
 
-  public static Pair<List<DimensionSchema>, AggregatorFactory[]> getDimensionsAndAggregates(List<String> columnNames,
-      List<TypeInfo> columnTypes) {
+  public static Set<String> parseFields(String fields) {
+    if (fields == null || fields.isEmpty()) {
+      return new HashSet<>();
+    }
+    String[] fieldsArray = fields.split(",");
+    Set<String> result = new HashSet<>();
+    for (String field: fieldsArray) {
+      if (field == null || field.isEmpty()) {
+        continue;
+      }
+      result.add(field);
+    }
+    return result;
+  }
+
+  public static Pair<List<DimensionSchema>, AggregatorFactory[]>
+      getDimensionsAndAggregates(
+              List<String> columnNames,
+              List<TypeInfo> columnTypes,
+              String druidHllFields,
+              String druidThetaFields,
+              String druidExcludedDimensions) {
+
+    Set<String> hllFields = parseFields(druidHllFields);
+    Set<String> thetaFields = parseFields(druidThetaFields);
+    Set<String> excludedDimensions = parseFields(druidExcludedDimensions);
+
     // Default, all columns that are not metrics or timestamp, are treated as dimensions
     final List<DimensionSchema> dimensions = new ArrayList<>();
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
@@ -846,10 +874,18 @@ public final class DruidStorageHandlerUtils {
               + " does not have STRING type: "
               + primitiveCategory);
         }
-        dimensions.add(new StringDimensionSchema(dColumnName));
+        if (!excludedDimensions.contains(dColumnName)) {
+          dimensions.add(new StringDimensionSchema(dColumnName));
+        }
         continue;
       }
       aggregatorFactoryBuilder.add(af);
+      String dColumnName = columnNames.get(i);
+      if (hllFields.contains(dColumnName)) {
+        aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory(dColumnName,
+                dColumnName, HllSketchAggregatorFactory.DEFAULT_LG_K,
+                HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name()));
+      }
     }
     ImmutableList<AggregatorFactory> aggregatorFactories = aggregatorFactoryBuilder.build();
     return Pair.of(dimensions, aggregatorFactories.toArray(new AggregatorFactory[0]));
