@@ -832,6 +832,15 @@ public final class DruidStorageHandlerUtils {
     final List<DimensionSchema> dimensions = new ArrayList<>();
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
     for (int i = 0; i < columnTypes.size(); i++) {
+
+      String dColumnName = columnNames.get(i);
+      if (hllFields.contains(dColumnName)) {
+        aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory("cd_" + dColumnName,
+                dColumnName, HllSketchAggregatorFactory.DEFAULT_LG_K,
+                HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name()));
+        continue;
+      }
+
       final PrimitiveObjectInspector.PrimitiveCategory
           primitiveCategory =
           ((PrimitiveTypeInfo) columnTypes.get(i)).getPrimitiveCategory();
@@ -880,12 +889,6 @@ public final class DruidStorageHandlerUtils {
         continue;
       }
       aggregatorFactoryBuilder.add(af);
-      String dColumnName = columnNames.get(i);
-      if (hllFields.contains(dColumnName)) {
-        aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory(dColumnName,
-                dColumnName, HllSketchAggregatorFactory.DEFAULT_LG_K,
-                HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name()));
-      }
     }
     ImmutableList<AggregatorFactory> aggregatorFactories = aggregatorFactoryBuilder.build();
     return Pair.of(dimensions, aggregatorFactories.toArray(new AggregatorFactory[0]));
