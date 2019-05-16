@@ -34,60 +34,12 @@
     <hadoop.version>2.7.2</hadoop.version>
   </properties>
 
-  <repositories>
-    <repository>
-      <id>apache.snapshots</id>
-      <name>Apache Development Snapshot Repository</name>
-      <url>https://repository.apache.org/content/repositories/snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>releases</id>
-      <name>druid</name>
-      <url>http://repo.bigo-maven.sg:8081/repository/maven-releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>snapshots</id>
-      <name>druid</name>
-      <url>http://repo.bigo-maven.sg:8081/repository/maven-snapshots</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
   <dependencies>
-    <!-- https://mvnrepository.com/artifact/io.netty/netty -->
+    <!-- https://mvnrepository.com/artifact/org.apache.druid.extensions/druid-datasketches -->
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty</artifactId>
-      <version>3.10.6.Final</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/javax.validation/validation-api -->
-    <dependency>
-      <groupId>javax.validation</groupId>
-      <artifactId>validation-api</artifactId>
-      <version>1.1.0.Final</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/org.jdbi/jdbi -->
-    <dependency>
-      <groupId>org.jdbi</groupId>
-      <artifactId>jdbi</artifactId>
-      <version>2.63.1</version>
+      <groupId>org.apache.druid.extensions</groupId>
+      <artifactId>druid-datasketches</artifactId>
+      <version>0.14.0-incubating</version>
     </dependency>
     <!-- dependencies are always listed in sorted order by groupId, artifectId -->
     <!-- intra-project -->
@@ -161,7 +113,7 @@
     <dependency>
       <groupId>org.apache.druid</groupId>
       <artifactId>druid-server</artifactId>
-      <version>${druid.version}</version>
+      <version>0.14.0-incubating</version>
       <exclusions>
         <exclusion>
           <groupId>com.fasterxml.jackson.core</groupId>
@@ -194,12 +146,6 @@
         </exclusion>
       </exclusions>
       <optional>true</optional>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/io.druid.extensions/druid-datasketches -->
-    <dependency>
-      <groupId>org.apache.druid</groupId>
-      <artifactId>druid-datasketches</artifactId>
-      <version>${druid.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.druid.extensions</groupId>
@@ -317,25 +263,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
-    <dependency>
-      <groupId>com.yahoo.datasketches</groupId>
-      <artifactId>sketches-core</artifactId>
-      <version>0.12.0</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.druid</groupId>
-      <artifactId>druid-core</artifactId>
-      <version>${druid.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.druid</groupId>
-      <artifactId>druid-sql</artifactId>
-      <version>${druid.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
   </dependencies>
 
   <profiles>
