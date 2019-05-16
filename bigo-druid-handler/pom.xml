@@ -334,6 +334,7 @@
                   </relocations>
                   <artifactSet>
                     <includes>
+                      <include>com.yahoo.*</include>
                       <include>org.apache.druid:*</include>
                       <include>org.apache.druid.extensions:*</include>
                       <include>io.netty:*</include>
