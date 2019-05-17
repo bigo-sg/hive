@@ -833,12 +833,12 @@ public final class DruidStorageHandlerUtils {
 
       String dColumnName = columnNames.get(i);
       if (hllFields.contains(dColumnName)) {
-        aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory("cd_" + dColumnName,
+        aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory("hcd_" + dColumnName,
                 dColumnName, HllSketchAggregatorFactory.DEFAULT_LG_K,
                 HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name()));
         continue;
       } else if (thetaFields.contains(dColumnName)) {
-        aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("cd_" + dColumnName,
+        aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("scd_" + dColumnName,
                 dColumnName, SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE));
       }
 
