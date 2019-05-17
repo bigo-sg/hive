@@ -92,6 +92,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.retry.RetryPolicies;
 import org.apache.hadoop.io.retry.RetryProxy;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.StringUtils;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMethod;
@@ -818,9 +819,32 @@ public final class DruidStorageHandlerUtils {
       getDimensionsAndAggregates(
               List<String> columnNames,
               List<TypeInfo> columnTypes,
-              String druidHllFields,
-              String druidThetaFields,
-              String druidExcludedDimensions) {
+              JobConf jc,
+              Properties tableProperties
+              ) {
+
+    final String druidHllFields = tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS) == null
+            ? jc.get(Constants.DRUID_HLL_SKETCH_FIELDS)
+            : tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS);
+
+    final String druidThetaFields = tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS) == null
+            ? jc.get(Constants.DRUID_THETA_SKETCH_FIELDS)
+            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
+
+    final String druidExcludedDimensions = tableProperties.getProperty(Constants.DRUID_EXCLUDED_DIMENSIONS) == null
+            ? jc.get(Constants.DRUID_EXCLUDED_DIMENSIONS)
+            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
+
+    final String sizeString = tableProperties.getProperty(DruidConstants.DRUID_SKETCH_THETA_SIZE) == null
+            ? jc.get(DruidConstants.DRUID_SKETCH_THETA_SIZE)
+            : tableProperties.getProperty(DruidConstants.DRUID_SKETCH_THETA_SIZE);
+
+    Integer size = sizeString == null ? SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE / 2:
+            Integer.parseInt(sizeString);
+
+    if (size == null || size <= 1) {
+      size = SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE / 2;
+    }
 
     Set<String> hllFields = parseFields(druidHllFields);
     Set<String> thetaFields = parseFields(druidThetaFields);
@@ -841,7 +865,8 @@ public final class DruidStorageHandlerUtils {
         continue;
       } else if (thetaFields.contains(dColumnName)) {
         aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("scd_" + dColumnName,
-                dColumnName, SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE));
+                dColumnName, size));
+        continue;
       }
 
       final PrimitiveObjectInspector.PrimitiveCategory

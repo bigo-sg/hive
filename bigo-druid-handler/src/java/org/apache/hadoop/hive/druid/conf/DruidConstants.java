@@ -34,6 +34,14 @@ public final class DruidConstants {
 
   public static final String DRUID_ROLLUP = "druid.rollup";
 
+  // see https://datasketches.github.io/docs/Theta/ThetaSize.html
+  // Must be a power of 2. Internally, size refers to the maximum number of entries sketch object
+  // will retain. Higher size means higher accuracy but more space to store sketches.
+  // Note that after you index with a particular size, druid will persist sketch in segments
+  // and you will use size greater or equal to that at query time. See the DataSketches
+  // site for details. In general, We recommend just sticking to default size.
+  public static final String DRUID_SKETCH_THETA_SIZE = "druid.sketch.theta.size";
+
   public static final String DRUID_QUERY_GRANULARITY = "druid.query.granularity";
 
   public static final String DRUID_SEGMENT_DIRECTORY = "druid.storage.storageDirectory";

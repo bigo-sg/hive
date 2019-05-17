@@ -97,18 +97,6 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
         ? jc.get(Constants.DRUID_DATA_SOURCE)
         : tableProperties.getProperty(Constants.DRUID_DATA_SOURCE);
 
-    final String druidHllFields = tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS) == null
-            ? jc.get(Constants.DRUID_HLL_SKETCH_FIELDS)
-            : tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS);
-
-    final String druidThetaFields = tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS) == null
-            ? jc.get(Constants.DRUID_THETA_SKETCH_FIELDS)
-            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
-
-    final String druidExcludedDimensions = tableProperties.getProperty(Constants.DRUID_EXCLUDED_DIMENSIONS) == null
-            ? jc.get(Constants.DRUID_EXCLUDED_DIMENSIONS)
-            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
-
     final String segmentDirectory = jc.get(DruidConstants.DRUID_SEGMENT_INTERMEDIATE_DIRECTORY);
 
     final GranularitySpec granularitySpec = DruidStorageHandlerUtils.getGranularitySpec(jc, tableProperties);
@@ -131,8 +119,7 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
     ArrayList<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(columnTypeProperty);
 
     Pair<List<DimensionSchema>, AggregatorFactory[]> dimensionsAndAggregates = DruidStorageHandlerUtils
-        .getDimensionsAndAggregates(columnNames, columnTypes, druidHllFields,
-                druidThetaFields, druidExcludedDimensions);
+        .getDimensionsAndAggregates(columnNames, columnTypes, jc, tableProperties);
     final InputRowParser inputRowParser = new MapInputRowParser(new TimeAndDimsParseSpec(
             new TimestampSpec(DruidConstants.DEFAULT_TIMESTAMP_COLUMN, "auto", null),
             new DimensionsSpec(dimensionsAndAggregates.lhs, Lists
