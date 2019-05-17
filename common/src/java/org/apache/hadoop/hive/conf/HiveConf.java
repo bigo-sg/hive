@@ -1944,8 +1944,8 @@ public class HiveConf extends Configuration {
             new PatternSet("YEAR", "MONTH", "WEEK", "DAY", "HOUR", "MINUTE", "SECOND"),
             "Granularity for the segments created by the Druid storage handler"
     ),
-    HIVE_DRUID_SKETCH_THETA_SIZE("hive.druid.sketch.theta.size", "16384",
-            new PatternSet("16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32"),
+    HIVE_DRUID_SKETCH_THETA_SIZE("hive.druid.sketch.theta.size", "-1",
+            new PatternSet("-1", "16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32"),
             "https://datasketches.github.io/docs/Theta/ThetaSize.html"
     ),
     HIVE_DRUID_TARGET_SHARDS_PER_GRANULARITY("hive.druid.segment.targetShardsPerGranularity", -1,
