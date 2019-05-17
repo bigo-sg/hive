@@ -39,10 +39,8 @@
     <dependency>
       <groupId>org.apache.druid.extensions</groupId>
       <artifactId>druid-datasketches</artifactId>
-      <version>0.14.0-incubating</version>
+      <version>${druid.version}</version>
     </dependency>
-    <!-- dependencies are always listed in sorted order by groupId, artifectId -->
-    <!-- intra-project -->
     <dependency>
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-smile</artifactId>

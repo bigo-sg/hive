@@ -51,6 +51,8 @@ import org.apache.druid.query.aggregation.LongSumAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchModule;
+import org.apache.druid.query.aggregation.datasketches.theta.SketchAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldSketchBuildAggregatorFactory;
 import org.apache.druid.query.expression.*;
 import org.apache.druid.query.scan.ScanQuery;
 import org.apache.druid.query.select.SelectQueryConfig;
@@ -788,12 +790,6 @@ public final class DruidStorageHandlerUtils {
   }
 
   public static IndexSpec getIndexSpec(Configuration jc) {
-//    final BitmapSerdeFactory bitmapSerdeFactory;
-//    if ("concise".equals(HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_BITMAP_FACTORY_TYPE))) {
-//      bitmapSerdeFactory = new ConciseBitmapSerdeFactory();
-//    } else {
-//      bitmapSerdeFactory = new RoaringBitmapSerdeFactory(true);
-//    }
     final BitmapSerdeFactory bitmapSerdeFactory = new RoaringBitmapSerdeFactory(true);
 
     return new IndexSpec(bitmapSerdeFactory,
@@ -841,6 +837,9 @@ public final class DruidStorageHandlerUtils {
                 dColumnName, HllSketchAggregatorFactory.DEFAULT_LG_K,
                 HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name()));
         continue;
+      } else if (thetaFields.contains(dColumnName)) {
+        aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("cd_" + dColumnName,
+                dColumnName, SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE));
       }
 
       final PrimitiveObjectInspector.PrimitiveCategory
