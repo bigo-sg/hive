@@ -48,6 +48,12 @@ import org.apache.druid.query.aggregation.AggregatorFactory;
 import org.apache.druid.query.aggregation.DoubleSumAggregatorFactory;
 import org.apache.druid.query.aggregation.FloatSumAggregatorFactory;
 import org.apache.druid.query.aggregation.LongSumAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.hll.HllSketchModule;
+import org.apache.druid.query.aggregation.datasketches.theta.SketchAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldApiSketchModule;
+import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldSketchBuildAggregatorFactory;
 import org.apache.druid.query.expression.*;
 import org.apache.druid.query.scan.ScanQuery;
 import org.apache.druid.query.select.SelectQueryConfig;
@@ -72,7 +78,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.conf.Constants;
+
+import org.apache.hadoop.hive.common.Constants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
 import org.apache.hadoop.hive.druid.json.AvroParseSpec;
@@ -85,6 +92,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.retry.RetryPolicies;
 import org.apache.hadoop.io.retry.RetryProxy;
+import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.util.StringUtils;
 import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMethod;
@@ -784,12 +792,6 @@ public final class DruidStorageHandlerUtils {
   }
 
   public static IndexSpec getIndexSpec(Configuration jc) {
-//    final BitmapSerdeFactory bitmapSerdeFactory;
-//    if ("concise".equals(HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_BITMAP_FACTORY_TYPE))) {
-//      bitmapSerdeFactory = new ConciseBitmapSerdeFactory();
-//    } else {
-//      bitmapSerdeFactory = new RoaringBitmapSerdeFactory(true);
-//    }
     final BitmapSerdeFactory bitmapSerdeFactory = new RoaringBitmapSerdeFactory(true);
 
     return new IndexSpec(bitmapSerdeFactory,
@@ -798,12 +800,80 @@ public final class DruidStorageHandlerUtils {
         IndexSpec.DEFAULT_LONG_ENCODING);
   }
 
-  public static Pair<List<DimensionSchema>, AggregatorFactory[]> getDimensionsAndAggregates(List<String> columnNames,
-      List<TypeInfo> columnTypes) {
+  public static Set<String> parseFields(String fields) {
+    if (fields == null || fields.isEmpty()) {
+      return new HashSet<>();
+    }
+    String[] fieldsArray = fields.split(",");
+    Set<String> result = new HashSet<>();
+    for (String field: fieldsArray) {
+      if (field == null || field.isEmpty()) {
+        continue;
+      }
+      result.add(field);
+    }
+    return result;
+  }
+
+  public static Pair<List<DimensionSchema>, AggregatorFactory[]>
+      getDimensionsAndAggregates(
+              List<String> columnNames,
+              List<TypeInfo> columnTypes,
+              JobConf jc,
+              Properties tableProperties
+              ) {
+
+    final String druidHllFields = tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS) == null
+            ? jc.get(Constants.DRUID_HLL_SKETCH_FIELDS)
+            : tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS);
+
+    final String druidThetaFields = tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS) == null
+            ? jc.get(Constants.DRUID_THETA_SKETCH_FIELDS)
+            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
+
+    final String druidExcludedDimensions = tableProperties.getProperty(Constants.DRUID_EXCLUDED_DIMENSIONS) == null
+            ? jc.get(Constants.DRUID_EXCLUDED_DIMENSIONS)
+            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
+
+    final String sizeString = tableProperties.getProperty(DruidConstants.DRUID_SKETCH_THETA_SIZE) == null
+            ? jc.get(DruidConstants.DRUID_SKETCH_THETA_SIZE)
+            : tableProperties.getProperty(DruidConstants.DRUID_SKETCH_THETA_SIZE);
+
+    Integer size = sizeString == null ? SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE / 2:
+            Integer.parseInt(sizeString);
+
+    if (size == null || size <= 1) {
+      size = SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE / 2;
+    }
+    Integer hiveSize = Integer.parseInt(HiveConf.getVar(jc,
+            HiveConf.ConfVars.HIVE_DRUID_SKETCH_THETA_SIZE));
+    if (hiveSize != null && hiveSize > 0) {
+      size = hiveSize;
+    }
+
+    Set<String> hllFields = parseFields(druidHllFields);
+    Set<String> thetaFields = parseFields(druidThetaFields);
+    Set<String> excludedDimensions = parseFields(druidExcludedDimensions);
+
     // Default, all columns that are not metrics or timestamp, are treated as dimensions
     final List<DimensionSchema> dimensions = new ArrayList<>();
+    HllSketchModule.registerSerde();
+    new OldApiSketchModule().configure(null);
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
     for (int i = 0; i < columnTypes.size(); i++) {
+
+      String dColumnName = columnNames.get(i);
+      if (hllFields.contains(dColumnName)) {
+        aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory("hcd_" + dColumnName,
+                dColumnName, HllSketchAggregatorFactory.DEFAULT_LG_K,
+                HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name()));
+        continue;
+      } else if (thetaFields.contains(dColumnName)) {
+        aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("scd_" + dColumnName,
+                dColumnName, size));
+        continue;
+      }
+
       final PrimitiveObjectInspector.PrimitiveCategory
           primitiveCategory =
           ((PrimitiveTypeInfo) columnTypes.get(i)).getPrimitiveCategory();
@@ -837,7 +907,6 @@ public final class DruidStorageHandlerUtils {
         continue;
       default:
         // Dimension
-        String dColumnName = columnNames.get(i);
         if (PrimitiveObjectInspectorUtils.getPrimitiveGrouping(primitiveCategory)
             != PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP
             && primitiveCategory != PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN) {
@@ -846,7 +915,9 @@ public final class DruidStorageHandlerUtils {
               + " does not have STRING type: "
               + primitiveCategory);
         }
-        dimensions.add(new StringDimensionSchema(dColumnName));
+        if (!excludedDimensions.contains(dColumnName)) {
+          dimensions.add(new StringDimensionSchema(dColumnName));
+        }
         continue;
       }
       aggregatorFactoryBuilder.add(af);

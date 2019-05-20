@@ -36,7 +36,7 @@ import org.apache.druid.segment.realtime.plumber.CustomVersioningPolicy;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.conf.Constants;
+import org.apache.hadoop.hive.common.Constants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.druid.DruidStorageHandlerUtils;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
@@ -96,6 +96,7 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
     final String dataSource = tableProperties.getProperty(Constants.DRUID_DATA_SOURCE) == null
         ? jc.get(Constants.DRUID_DATA_SOURCE)
         : tableProperties.getProperty(Constants.DRUID_DATA_SOURCE);
+
     final String segmentDirectory = jc.get(DruidConstants.DRUID_SEGMENT_INTERMEDIATE_DIRECTORY);
 
     final GranularitySpec granularitySpec = DruidStorageHandlerUtils.getGranularitySpec(jc, tableProperties);
@@ -118,7 +119,7 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
     ArrayList<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(columnTypeProperty);
 
     Pair<List<DimensionSchema>, AggregatorFactory[]> dimensionsAndAggregates = DruidStorageHandlerUtils
-        .getDimensionsAndAggregates(columnNames, columnTypes);
+        .getDimensionsAndAggregates(columnNames, columnTypes, jc, tableProperties);
     final InputRowParser inputRowParser = new MapInputRowParser(new TimeAndDimsParseSpec(
             new TimestampSpec(DruidConstants.DEFAULT_TIMESTAMP_COLUMN, "auto", null),
             new DimensionsSpec(dimensionsAndAggregates.lhs, Lists
