@@ -139,7 +139,7 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
               );
 
       final int maxPartitionSize = HiveConf.getIntVar(parseCtx.getConf(),
-              HiveConf.ConfVars.HIVE_DRUID_MAX_PARTITION_SIZE);
+              HiveConf.ConfVars.HIVE_DRUID_TARGET_SHARDS_PER_GRANULARITY);
       targetShardsPerGranularity = maxPartitionSize > 0? maxPartitionSize:
               Integer.parseInt(targetShardsProperty);
       LOG.info("Sorted dynamic partitioning on time granularity optimization kicked in...");
