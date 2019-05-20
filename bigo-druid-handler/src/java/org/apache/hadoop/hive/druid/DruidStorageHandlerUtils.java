@@ -845,6 +845,11 @@ public final class DruidStorageHandlerUtils {
     if (size == null || size <= 1) {
       size = SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE / 2;
     }
+    Integer hiveSize = Integer.parseInt(HiveConf.getVar(jc,
+            HiveConf.ConfVars.HIVE_DRUID_SKETCH_THETA_SIZE));
+    if (hiveSize != null && hiveSize > 0) {
+      size = hiveSize;
+    }
 
     Set<String> hllFields = parseFields(druidHllFields);
     Set<String> thetaFields = parseFields(druidThetaFields);

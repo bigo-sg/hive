@@ -1947,6 +1947,10 @@ public class HiveConf extends Configuration {
     HIVE_DRUID_TARGET_SHARDS_PER_GRANULARITY("hive.druid.segment.target.shards.per.granularity", -1,
             "partition num of some time"
     ),
+    HIVE_DRUID_SKETCH_THETA_SIZE("hive.druid.sketch.theta.size", "-1",
+            new PatternSet("-1", "16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32"),
+            "https://datasketches.github.io/docs/Theta/ThetaSize.html"
+    ),
     HIVE_DRUID_MAX_PARTITION_SIZE("hive.druid.indexer.partition.size.max", 5000000,
             "Maximum number of records per segment partition"
     ),
