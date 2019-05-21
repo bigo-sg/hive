@@ -939,6 +939,10 @@ public final class DruidStorageHandlerUtils {
               + primitiveCategory);
         }
         if (!excludedDimensions.contains(dColumnName)) {
+          if (mvDimensions.contains(dColumnName)) {
+            dimensions.add(new StringDimensionSchema("mvd_" + dColumnName));
+            continue;
+          }
           dimensions.add(new StringDimensionSchema(dColumnName));
         }
         continue;
