@@ -815,29 +815,45 @@ public final class DruidStorageHandlerUtils {
     return result;
   }
 
+  public static String getTableProperty(Properties tableProperties, JobConf jc, String key) {
+    return tableProperties.getProperty(key) == null
+            ? jc.get(key)
+            : tableProperties.getProperty(key);
+  }
+
   public static Pair<List<DimensionSchema>, AggregatorFactory[]>
       getDimensionsAndAggregates(
               List<String> columnNames,
               List<TypeInfo> columnTypes,
+              Set<String> mvDimensions,
               JobConf jc,
               Properties tableProperties
               ) {
 
-    final String druidHllFields = tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS) == null
-            ? jc.get(Constants.DRUID_HLL_SKETCH_FIELDS)
-            : tableProperties.getProperty(Constants.DRUID_HLL_SKETCH_FIELDS);
+    final String druidHllFields = getTableProperty(tableProperties, jc, Constants.DRUID_HLL_SKETCH_FIELDS);
 
-    final String druidThetaFields = tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS) == null
-            ? jc.get(Constants.DRUID_THETA_SKETCH_FIELDS)
-            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
+    final String druidThetaFields = getTableProperty(tableProperties, jc, Constants.DRUID_THETA_SKETCH_FIELDS);
 
-    final String druidExcludedDimensions = tableProperties.getProperty(Constants.DRUID_EXCLUDED_DIMENSIONS) == null
-            ? jc.get(Constants.DRUID_EXCLUDED_DIMENSIONS)
-            : tableProperties.getProperty(Constants.DRUID_THETA_SKETCH_FIELDS);
+    final String druidExcludedDimensions = getTableProperty(tableProperties, jc, Constants.DRUID_THETA_SKETCH_FIELDS);
 
-    final String sizeString = tableProperties.getProperty(DruidConstants.DRUID_SKETCH_THETA_SIZE) == null
-            ? jc.get(DruidConstants.DRUID_SKETCH_THETA_SIZE)
-            : tableProperties.getProperty(DruidConstants.DRUID_SKETCH_THETA_SIZE);
+    final String sizeString = getTableProperty(tableProperties, jc, DruidConstants.DRUID_SKETCH_THETA_SIZE);
+    final String druidHllLgK = getTableProperty(tableProperties, jc, Constants.DRUID_HLL_LG_K);
+
+    int lgk = HllSketchAggregatorFactory.DEFAULT_LG_K;
+    if (druidHllLgK != null) {
+      Integer lgk1 = Integer.parseInt(druidHllLgK);
+      if (lgk1 != null && lgk1 > 2 >> 4 && lgk1 < 2 << 21) {
+        lgk = lgk1;
+      }
+    }
+
+    String druidHllTgtType = getTableProperty(tableProperties, jc, Constants.DRUID_HLL_TGT_TYPE);
+
+    if (druidHllTgtType == null ||
+            !(druidHllTgtType.equals("HLL_4") ||
+                    druidHllTgtType.equals("HLL_6") || druidHllTgtType.equals("HLL_8"))) {
+      druidHllTgtType = HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name();
+    }
 
     Integer size = sizeString == null ? SketchAggregatorFactory.DEFAULT_MAX_SKETCH_SIZE / 2:
             Integer.parseInt(sizeString);
@@ -860,13 +876,20 @@ public final class DruidStorageHandlerUtils {
     HllSketchModule.registerSerde();
     new OldApiSketchModule().configure(null);
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
+
     for (int i = 0; i < columnTypes.size(); i++) {
 
+      // exclude multi-value dimensions
+      if (mvDimensions.contains(columnNames.get(i))) {
+        continue;
+      }
+
+      // count distinct algorithm for druid
       String dColumnName = columnNames.get(i);
       if (hllFields.contains(dColumnName)) {
         aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory("hcd_" + dColumnName,
-                dColumnName, HllSketchAggregatorFactory.DEFAULT_LG_K,
-                HllSketchAggregatorFactory.DEFAULT_TGT_HLL_TYPE.name()));
+                dColumnName, lgk,
+                druidHllTgtType));
         continue;
       } else if (thetaFields.contains(dColumnName)) {
         aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("scd_" + dColumnName,

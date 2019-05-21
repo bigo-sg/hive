@@ -34,6 +34,9 @@ import org.apache.druid.segment.indexing.granularity.GranularitySpec;
 import org.apache.druid.segment.realtime.plumber.CustomVersioningPolicy;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.druid.segment.transform.ListTransform;
+import org.apache.druid.segment.transform.Transform;
+import org.apache.druid.segment.transform.TransformSpec;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.Constants;
@@ -63,10 +66,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Druid Output format class used to write data as Native Druid Segment.
@@ -94,8 +94,12 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
     // name was already persisted. Otherwise, it is a CT/CTAS and we need to get the name from the
     // job properties that are set by configureOutputJobProperties in the DruidStorageHandler
     final String dataSource = tableProperties.getProperty(Constants.DRUID_DATA_SOURCE) == null
-        ? jc.get(Constants.DRUID_DATA_SOURCE)
-        : tableProperties.getProperty(Constants.DRUID_DATA_SOURCE);
+            ? jc.get(Constants.DRUID_DATA_SOURCE)
+            : tableProperties.getProperty(Constants.DRUID_DATA_SOURCE);
+
+    final String multiValueDimensions = tableProperties.getProperty(Constants.DRUID_MULTI_VALUE_DIMENSIONS) == null
+            ? jc.get(Constants.DRUID_MULTI_VALUE_DIMENSIONS)
+            : tableProperties.getProperty(Constants.DRUID_MULTI_VALUE_DIMENSIONS);
 
     final String segmentDirectory = jc.get(DruidConstants.DRUID_SEGMENT_INTERMEDIATE_DIRECTORY);
 
@@ -118,8 +122,10 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
     }
     ArrayList<TypeInfo> columnTypes = TypeInfoUtils.getTypeInfosFromTypeString(columnTypeProperty);
 
+    Set<String> mvDimensions = DruidStorageHandlerUtils.parseFields(multiValueDimensions);
+
     Pair<List<DimensionSchema>, AggregatorFactory[]> dimensionsAndAggregates = DruidStorageHandlerUtils
-        .getDimensionsAndAggregates(columnNames, columnTypes, jc, tableProperties);
+        .getDimensionsAndAggregates(columnNames, columnTypes, mvDimensions, jc, tableProperties);
     final InputRowParser inputRowParser = new MapInputRowParser(new TimeAndDimsParseSpec(
             new TimestampSpec(DruidConstants.DEFAULT_TIMESTAMP_COLUMN, "auto", null),
             new DimensionsSpec(dimensionsAndAggregates.lhs, Lists
@@ -134,12 +140,24 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
         DruidStorageHandlerUtils.JSON_MAPPER.convertValue(inputRowParser, new TypeReference<Map<String, Object>>() {
         });
 
+    List<Transform> transforms = new ArrayList<>();
+    for (String dimension: mvDimensions) {
+      if (!columnNames.contains(dimension)) {
+        continue;
+      }
+      Transform transform = new ListTransform("mvd_" + dimension, dimension);
+      transforms.add(transform);
+    }
+    TransformSpec transformSpec = null;
+    if (transforms.size() > 0) {
+      transformSpec = new TransformSpec(null, transforms);
+    }
     final DataSchema dataSchema = new DataSchema(
             Preconditions.checkNotNull(dataSource, "Data source name is null"),
             inputParser,
             dimensionsAndAggregates.rhs,
             granularitySpec,
-            null,
+            transformSpec,
             DruidStorageHandlerUtils.JSON_MAPPER
     );
 

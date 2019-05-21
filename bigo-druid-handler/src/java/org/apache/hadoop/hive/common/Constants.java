@@ -29,10 +29,23 @@ public class Constants {
   public static final String DRUID_HIVE_OUTPUT_FORMAT =
           "org.apache.hadoop.hive.druid.io.DruidOutputFormat";
   public static final String DRUID_DATA_SOURCE = "druid.datasource";
+
+  /*
+   * default 12,log2 of K that is the number of buckets in the sketch,
+   * parameter that controls the size and the accuracy.
+   * Must be a power of 2 from 4 to 21 inclusively.
+   * */
+  public static final String DRUID_HLL_LG_K = "druid.hll.lg.k";
+  /*
+   * HLL_4(default),The type of the target HLL sketch. Must be "HLL_4", "HLL_6" or "HLL_8"
+   * */
+  public static final String DRUID_HLL_TGT_TYPE = "druid.hll.tgt.type";
   /*fields used to calculate count distinct with hll algorithm,for example uid,vid*/
   public static final String DRUID_HLL_SKETCH_FIELDS = "druid.hll.fields";
   /*fields used to calculate count distinct with theta algorithm,for example uid,vid*/
   public static final String DRUID_THETA_SKETCH_FIELDS = "druid.theta.fields";
+  /**/
+  public static final String DRUID_MULTI_VALUE_DIMENSIONS = "druid.multi.value.dimensions";
   /*exclude some of the string type dimensions,for example some fields with type of
    *string that you only want to agg as count distinct*/
   public static final String DRUID_EXCLUDED_DIMENSIONS = "druid.excluded.dimensions";
