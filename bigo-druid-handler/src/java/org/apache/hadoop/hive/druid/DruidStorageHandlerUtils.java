@@ -941,11 +941,11 @@ public final class DruidStorageHandlerUtils {
         }
         if (!excludedDimensions.contains(dColumnName)) {
           if (mvDimensions.contains(dColumnName)) {
-            LOG.info("add "+"dColumnName"+" as mv dim");
-            dimensions.add(new StringDimensionSchema("mvd_" + dColumnName));
+            LOG.info("add "+dColumnName+" as mv dim");
+            dimensions.add(new StringDimensionSchema(dColumnName));
             continue;
           }
-          LOG.info("add "+"dColumnName"+" as normal dim");
+          LOG.info("add "+dColumnName+" as normal dim");
           dimensions.add(new StringDimensionSchema(dColumnName));
         }
         continue;

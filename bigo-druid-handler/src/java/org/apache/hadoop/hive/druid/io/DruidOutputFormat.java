@@ -145,7 +145,7 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
       if (!columnNames.contains(dimension)) {
         continue;
       }
-      Transform transform = new ListTransform("mvd_" + dimension, dimension);
+      Transform transform = new ListTransform(dimension, dimension);
       transforms.add(transform);
     }
     TransformSpec transformSpec = null;
