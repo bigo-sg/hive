@@ -880,9 +880,9 @@ public final class DruidStorageHandlerUtils {
     for (int i = 0; i < columnTypes.size(); i++) {
 
       // exclude multi-value dimensions
-      if (mvDimensions.contains(columnNames.get(i))) {
-        continue;
-      }
+//      if (mvDimensions.contains(columnNames.get(i))) {
+//        continue;
+//      }
 
       // count distinct algorithm for druid
       String dColumnName = columnNames.get(i);
