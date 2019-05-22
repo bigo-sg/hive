@@ -226,6 +226,8 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             dataSchema.getParser().getParseSpec().getDimensionsSpec().getDimensionNames(),
             record.getValue());
 
+    final InputRow
+            inputRow1 =dataSchema.getTransformSpec().toTransformer().transform(inputRow);
     try {
 
       if (partitionNumber != -1 && maxPartitionSize == -1) {
@@ -255,11 +257,11 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
                   new LinearShardSpec(partitionNumber));
 
         }
-        appenderator.add(currentOpenSegment, inputRow, committerSupplier::get);
+        appenderator.add(currentOpenSegment, inputRow1, committerSupplier::get);
 
       } else if (partitionNumber == -1 && maxPartitionSize != -1) {
         /*Case we are partitioning the segments based on time and max row per segment maxPartitionSize*/
-        appenderator.add(getSegmentIdentifierAndMaybePush(timestamp), inputRow, committerSupplier::get);
+        appenderator.add(getSegmentIdentifierAndMaybePush(timestamp), inputRow1, committerSupplier::get);
       } else {
         throw new IllegalArgumentException(String.format(
             "partitionNumber and maxPartitionSize should be mutually exclusive "
