@@ -23,6 +23,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.apache.commons.io.FileUtils;
 import org.apache.druid.data.input.Committer;
 import org.apache.druid.data.input.InputRow;
 import org.apache.druid.data.input.MapBasedInputRow;
@@ -32,18 +33,12 @@ import org.apache.druid.segment.indexing.DataSchema;
 import org.apache.druid.segment.indexing.RealtimeTuningConfig;
 import org.apache.druid.segment.loading.DataSegmentPusher;
 import org.apache.druid.segment.realtime.FireDepartmentMetrics;
-import org.apache.druid.segment.realtime.appenderator.Appenderator;
-import org.apache.druid.segment.realtime.appenderator.Appenderators;
-import org.apache.druid.segment.realtime.appenderator.SegmentIdWithShardSpec;
-import org.apache.druid.segment.realtime.appenderator.SegmentNotWritableException;
-import org.apache.druid.segment.realtime.appenderator.SegmentsAndMetadata;
+import org.apache.druid.segment.realtime.appenderator.*;
 import org.apache.druid.segment.realtime.plumber.Committers;
 import org.apache.druid.timeline.DataSegment;
 import org.apache.druid.timeline.partition.LinearShardSpec;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.conf.Constants;
 import org.apache.hadoop.hive.druid.DruidStorageHandlerUtils;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
 import org.apache.hadoop.hive.druid.serde.DruidWritable;
@@ -59,7 +54,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -223,12 +221,9 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             dataSchema.getParser().getParseSpec().getDimensionsSpec().getDimensionNames(),
             record.getValue());
 
-//    LOG.info("the transform is:" + dataSchema.getTransformSpec().getTransforms().get(0));
+    // support for expressions and multi-value dimensions
     final InputRow
-            inputRow1 = dataSchema.getTransformSpec().toTransformer().transform(inputRow);
-//    if (new Random().nextInt(500) == 55) {
-//      LOG.info(String.join("----------", inputRow1.getDimension("abflags_v3_array")));
-//    }
+            transformedInputRow = dataSchema.getTransformSpec().toTransformer().transform(inputRow);
     try {
 
       if (partitionNumber != -1 && maxPartitionSize == -1) {
@@ -258,11 +253,11 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
                   new LinearShardSpec(partitionNumber));
 
         }
-        appenderator.add(currentOpenSegment, inputRow1, committerSupplier::get);
+        appenderator.add(currentOpenSegment, transformedInputRow, committerSupplier::get);
 
       } else if (partitionNumber == -1 && maxPartitionSize != -1) {
         /*Case we are partitioning the segments based on time and max row per segment maxPartitionSize*/
-        appenderator.add(getSegmentIdentifierAndMaybePush(timestamp), inputRow1, committerSupplier::get);
+        appenderator.add(getSegmentIdentifierAndMaybePush(timestamp), transformedInputRow, committerSupplier::get);
       } else {
         throw new IllegalArgumentException(String.format(
             "partitionNumber and maxPartitionSize should be mutually exclusive "
