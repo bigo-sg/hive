@@ -879,11 +879,6 @@ public final class DruidStorageHandlerUtils {
 
     for (int i = 0; i < columnTypes.size(); i++) {
 
-      // exclude multi-value dimensions
-      if (mvDimensions.contains(columnNames.get(i))) {
-        continue;
-      }
-
       LOG.info("column type is: " + columnTypes.get(i) + ", column name is: " + columnNames.get(i));
       // count distinct algorithm for druid
       String dColumnName = columnNames.get(i);
@@ -942,10 +937,9 @@ public final class DruidStorageHandlerUtils {
         if (!excludedDimensions.contains(dColumnName)) {
           if (mvDimensions.contains(dColumnName)) {
             LOG.info("add "+dColumnName+" as mv dim");
-            dimensions.add(new StringDimensionSchema(dColumnName));
-            continue;
+          } else {
+            LOG.info("add " + dColumnName + " as normal dim");
           }
-          LOG.info("add "+dColumnName+" as normal dim");
           dimensions.add(new StringDimensionSchema(dColumnName));
         }
         continue;
