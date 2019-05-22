@@ -226,9 +226,9 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
 //    LOG.info("the transform is:" + dataSchema.getTransformSpec().getTransforms().get(0));
     final InputRow
             inputRow1 = dataSchema.getTransformSpec().toTransformer().transform(inputRow);
-    if (new Random().nextInt(500) == 55) {
-      LOG.info(String.join("----------", inputRow1.getDimension("abflags_v3_array")));
-    }
+//    if (new Random().nextInt(500) == 55) {
+//      LOG.info(String.join("----------", inputRow1.getDimension("abflags_v3_array")));
+//    }
     try {
 
       if (partitionNumber != -1 && maxPartitionSize == -1) {
