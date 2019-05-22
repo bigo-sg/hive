@@ -59,10 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -226,9 +223,12 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             dataSchema.getParser().getParseSpec().getDimensionsSpec().getDimensionNames(),
             record.getValue());
 
-    LOG.info("the transform is:" + dataSchema.getTransformSpec().getTransforms().get(0));
+//    LOG.info("the transform is:" + dataSchema.getTransformSpec().getTransforms().get(0));
     final InputRow
             inputRow1 = dataSchema.getTransformSpec().toTransformer().transform(inputRow);
+    if (new Random().nextInt(500) == 55) {
+      LOG.info(String.join("----------", inputRow1.getDimension("abflags_v3_array")));
+    }
     try {
 
       if (partitionNumber != -1 && maxPartitionSize == -1) {
