@@ -226,8 +226,9 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             dataSchema.getParser().getParseSpec().getDimensionsSpec().getDimensionNames(),
             record.getValue());
 
+    LOG.info("the transform is:" + dataSchema.getTransformSpec().getTransforms().get(0));
     final InputRow
-            inputRow1 =dataSchema.getTransformSpec().toTransformer().transform(inputRow);
+            inputRow1 = dataSchema.getTransformSpec().toTransformer().transform(inputRow);
     try {
 
       if (partitionNumber != -1 && maxPartitionSize == -1) {
