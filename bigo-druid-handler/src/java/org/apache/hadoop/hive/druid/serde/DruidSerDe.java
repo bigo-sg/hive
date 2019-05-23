@@ -303,6 +303,7 @@ import java.util.stream.Collectors;
              ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i).getFieldObjectInspector();
              List<?> listObjectInspectorList = listObjectInspector.getList(value.get(i));
              res = listObjectInspectorList;
+             LOG.info("name:"+value.get(i)+",field type is:" + listObjectInspectorList + "--size-" + listObjectInspectorList.size());
              List<String> result = new ArrayList<>();
              if (listObjectInspectorList != null) {
                for (int j = 0; j < listObjectInspectorList.size(); ++j) {
