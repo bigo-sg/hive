@@ -1194,6 +1194,7 @@ public final class ConstantPropagateProcFactory {
       List<ExprNodeDesc> colList = op.getConf().getColList();
       List<String> columnNames = op.getConf().getOutputColumnNames();
       Map<String, ExprNodeDesc> columnExprMap = op.getColumnExprMap();
+
       if (colList != null) {
         for (int i = 0; i < colList.size(); i++) {
           ExprNodeDesc newCol = foldExpr(colList.get(i), constants, cppCtx, op, 0, false);
@@ -1206,6 +1207,10 @@ public final class ConstantPropagateProcFactory {
               ((ExprNodeConstantDesc)newCol).setFoldedFromCol(colName);
             } else {
               // If it was internal column, lets try to get name from columnExprMap
+              if (columnExprMap == null) {
+                LOG.info("skip transform column: " + colName + " as columnExprMap is null.");
+                continue;
+              }
               ExprNodeDesc desc = columnExprMap.get(colName);
               if (desc instanceof ExprNodeConstantDesc) {
                 ((ExprNodeConstantDesc)newCol).setFoldedFromCol(((ExprNodeConstantDesc)desc).getFoldedFromCol());
