@@ -41,6 +41,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.StringUtils;
@@ -102,6 +103,17 @@ import java.util.stream.Collectors;
                     .collect(Collectors.toList())
                     .stream()
                     .collect(Collectors.toList());
+
+
+    List<TypeInfo> typeInfos = new ArrayList<>();
+    List<String> typeNames = Utilities.getColumnTypes(properties);
+    for (String typeName: typeNames) {
+      LOG.info("type name is :" + typeName);
+      if (typeName.startsWith("array<")) {
+//        typeInfos.add(TypeInfoFactory.getListTypeInfo(typeName));
+      }
+    }
+
     final List<ObjectInspector>
             inspectors =
             columnTypes.stream()
