@@ -300,8 +300,13 @@ import java.util.stream.Collectors;
         switch (primitiveTypeInfo.getPrimitiveCategory()) {
            case STRING:
 //             LOG.info("field type is:" + fields.get(i).getFieldObjectInspector());
-             ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i);
-             res = listObjectInspector.getList(value.get(i));
+             ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i).getFieldObjectInspector();
+             List<?> listObjectInspectorList = listObjectInspector.getList(value.get(i));
+             res = listObjectInspectorList;
+             List<String> result = new ArrayList<>();
+             for (int j = 0; j < listObjectInspectorList.size(); ++j) {
+               LOG.info("field type is:" + listObjectInspectorList.get(i));
+             }
             break;
           default:
             throw new SerDeException("Unsupported type: " + listTypeInfo.getCategory());
