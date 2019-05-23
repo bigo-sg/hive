@@ -35,6 +35,7 @@ import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.SerDeSpec;
 import org.apache.hadoop.hive.serde2.SerDeStats;
+import org.apache.hadoop.hive.serde2.lazybinary.objectinspector.LazyBinaryListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
@@ -298,14 +299,14 @@ import java.util.stream.Collectors;
         final Object res;
         switch (primitiveTypeInfo.getPrimitiveCategory()) {
            case STRING:
-             LOG.info("field type is:" + fields.get(i).getFieldObjectInspector());
-//             ListObjectInspector listObjectInspector = (ListObjectInspector) fields.get(i);
-//             res = listObjectInspector.getList(value.get(i));
+//             LOG.info("field type is:" + fields.get(i).getFieldObjectInspector());
+             ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i);
+             res = listObjectInspector.getList(value.get(i));
             break;
           default:
             throw new SerDeException("Unsupported type: " + listTypeInfo.getCategory());
         }
-//        value.put(columns[i], res);
+        value.put(columns[i], res);
       }
     }
     //Extract the partitions keys segments granularity and partition key if any
