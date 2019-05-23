@@ -304,8 +304,11 @@ import java.util.stream.Collectors;
              List<?> listObjectInspectorList = listObjectInspector.getList(value.get(i));
              res = listObjectInspectorList;
              List<String> result = new ArrayList<>();
-             for (int j = 0; j < listObjectInspectorList.size(); ++j) {
-               LOG.info("field type is:" + listObjectInspectorList.get(i));
+             if (listObjectInspectorList != null) {
+               for (int j = 0; j < listObjectInspectorList.size(); ++j) {
+                 LOG.info("field type is:" + listObjectInspectorList.get(i));
+                 result.add((String) listObjectInspectorList.get(i));
+               }
              }
             break;
           default:
