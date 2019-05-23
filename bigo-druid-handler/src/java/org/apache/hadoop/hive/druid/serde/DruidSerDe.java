@@ -95,6 +95,15 @@ import java.util.stream.Collectors;
               + "') not specified in create table; list of columns is : "
               + properties.getProperty(serdeConstants.LIST_COLUMNS));
     }
+    List<TypeInfo> typeInfos = new ArrayList<>();
+    List<String> typeNames = Utilities.getColumnTypes(properties);
+    for (String typeName: typeNames) {
+      LOG.info("type name is :" + typeName);
+      if (typeName.startsWith("array<")) {
+//        typeInfos.add(TypeInfoFactory.getListTypeInfo(typeName));
+      }
+    }
+
     final List<PrimitiveTypeInfo>
             columnTypes =
             Utilities.getColumnTypes(properties)
@@ -104,15 +113,6 @@ import java.util.stream.Collectors;
                     .stream()
                     .collect(Collectors.toList());
 
-
-    List<TypeInfo> typeInfos = new ArrayList<>();
-    List<String> typeNames = Utilities.getColumnTypes(properties);
-    for (String typeName: typeNames) {
-      LOG.info("type name is :" + typeName);
-      if (typeName.startsWith("array<")) {
-//        typeInfos.add(TypeInfoFactory.getListTypeInfo(typeName));
-      }
-    }
 
     final List<ObjectInspector>
             inspectors =
