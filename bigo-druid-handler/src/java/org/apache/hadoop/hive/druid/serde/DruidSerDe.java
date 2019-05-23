@@ -240,6 +240,8 @@ import java.util.stream.Collectors;
     // We deserialize the result
     final Map<String, Object> value = new HashMap<>();
     for (int i = 0; i < columns.length; i++) {
+      LOG.info("value[i]:" + value.get(i) + ", column[i]:" + columns[i]);
+
       if (values.get(i) == null) {
         // null, we just add it
         value.put(columns[i], null);
