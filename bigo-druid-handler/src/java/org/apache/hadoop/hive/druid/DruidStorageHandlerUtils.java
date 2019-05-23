@@ -834,7 +834,7 @@ public final class DruidStorageHandlerUtils {
 
     final String druidThetaFields = getTableProperty(tableProperties, jc, Constants.DRUID_THETA_SKETCH_FIELDS);
 
-    final String druidExcludedDimensions = getTableProperty(tableProperties, jc, Constants.DRUID_THETA_SKETCH_FIELDS);
+    final String druidExcludedDimensions = getTableProperty(tableProperties, jc, Constants.DRUID_EXCLUDED_DIMENSIONS);
 
     final String sizeString = getTableProperty(tableProperties, jc, DruidConstants.DRUID_SKETCH_THETA_SIZE);
     final String druidHllLgK = getTableProperty(tableProperties, jc, Constants.DRUID_HLL_LG_K);
