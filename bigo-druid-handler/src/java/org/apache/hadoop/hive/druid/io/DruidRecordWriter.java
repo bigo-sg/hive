@@ -220,6 +220,7 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
         new MapBasedInputRow(timestamp,
             dataSchema.getParser().getParseSpec().getDimensionsSpec().getDimensionNames(),
             record.getValue());
+    record.getValue().forEach((k, v) -> LOG.info("-------------key:" + k + "-------value:" + v));
 
     // support for expressions and multi-value dimensions
     final InputRow

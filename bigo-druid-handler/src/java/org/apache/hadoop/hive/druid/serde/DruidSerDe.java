@@ -303,14 +303,9 @@ import java.util.stream.Collectors;
              ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i).getFieldObjectInspector();
              List<?> listObjectInspectorList = listObjectInspector.getList(values.get(i));
              res = listObjectInspectorList;
-             if (listObjectInspectorList != null) {
-               for (int j = 0; j < listObjectInspectorList.size(); ++j) {
-                 LOG.info("field type is:" + listObjectInspectorList.get(j));
-               }
-             }
             break;
           default:
-            throw new SerDeException("Unsupported type: " + listTypeInfo.getCategory());
+            throw new SerDeException("Unsupported type: array<" + listTypeInfo.getCategory() + ">");
         }
         value.put(columns[i], res);
       }

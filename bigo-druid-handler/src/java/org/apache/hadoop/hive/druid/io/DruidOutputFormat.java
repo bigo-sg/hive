@@ -136,6 +136,7 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
     List<Transform> transforms = new ArrayList<>();
     for (int i = 0; i < columnTypes.size(); ++i) {
       if (columnTypes.get(i) instanceof ListTypeInfo) {
+        LOG.info("list field treat as MVD:" + columnNames.get(i));
         Transform transform = new HiveListTransform(columnNames.get(i), columnNames.get(i));
         transforms.add(transform);
       }
