@@ -54,10 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -226,12 +223,14 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
     // support for expressions and multi-value dimensions
     final InputRow
             transformedInputRow = dataSchema.getTransformSpec().toTransformer().transform(inputRow);
-    transformedInputRow.getDimensions().stream().forEach(new Consumer<String>() {
-      @Override
-      public void accept(String s) {
-        LOG.info(""+s + ":", transformedInputRow.getDimension(s));
-      }
-    });
+    if (new Random().nextInt(1000) == 555) {
+      transformedInputRow.getDimensions().stream().forEach(new Consumer<String>() {
+        @Override
+        public void accept(String s) {
+          LOG.info("" + s + ":" + transformedInputRow.getDimension(s));
+        }
+      });
+    }
     try {
 
       if (partitionNumber != -1 && maxPartitionSize == -1) {

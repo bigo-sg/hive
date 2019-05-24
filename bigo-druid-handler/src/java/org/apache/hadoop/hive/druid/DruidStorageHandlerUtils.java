@@ -879,10 +879,11 @@ public final class DruidStorageHandlerUtils {
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
 
     for (int i = 0; i < columnTypes.size(); i++) {
-
       TypeInfo typeInfo = columnTypes.get(i);
       if (typeInfo instanceof ListTypeInfo) {
-
+        String dColumnName = columnNames.get(i);
+        LOG.info("add " + dColumnName + " as mv dim");
+        dimensions.add(new StringDimensionSchema(dColumnName));
       } else if (typeInfo instanceof PrimitiveTypeInfo) {
         LOG.info("column type is: " + columnTypes.get(i) + ", column name is: " + columnNames.get(i));
         // count distinct algorithm for druid
@@ -940,11 +941,7 @@ public final class DruidStorageHandlerUtils {
                       + primitiveCategory);
             }
             if (!excludedDimensions.contains(dColumnName)) {
-              if (mvDimensions.contains(dColumnName)) {
-                LOG.info("add " + dColumnName + " as mv dim");
-              } else {
-                LOG.info("add " + dColumnName + " as normal dim");
-              }
+              LOG.info("add " + dColumnName + " as normal dim");
               dimensions.add(new StringDimensionSchema(dColumnName));
             }
             continue;
