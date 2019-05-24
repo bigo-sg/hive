@@ -79,7 +79,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
-import org.apache.hadoop.hive.common.Constants;
+import org.apache.hadoop.hive.conf.Constants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
 import org.apache.hadoop.hive.druid.json.AvroParseSpec;
@@ -88,6 +88,7 @@ import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.retry.RetryPolicies;
@@ -825,19 +826,18 @@ public final class DruidStorageHandlerUtils {
       getDimensionsAndAggregates(
               List<String> columnNames,
               List<TypeInfo> columnTypes,
-              Set<String> mvDimensions,
               JobConf jc,
               Properties tableProperties
               ) {
 
-    final String druidHllFields = getTableProperty(tableProperties, jc, Constants.DRUID_HLL_SKETCH_FIELDS);
+    final String druidHllFields = getTableProperty(tableProperties, jc, DruidConstants.DRUID_HLL_SKETCH_FIELDS);
 
-    final String druidThetaFields = getTableProperty(tableProperties, jc, Constants.DRUID_THETA_SKETCH_FIELDS);
+    final String druidThetaFields = getTableProperty(tableProperties, jc, DruidConstants.DRUID_THETA_SKETCH_FIELDS);
 
-    final String druidExcludedDimensions = getTableProperty(tableProperties, jc, Constants.DRUID_EXCLUDED_DIMENSIONS);
+    final String druidExcludedDimensions = getTableProperty(tableProperties, jc, DruidConstants.DRUID_THETA_SKETCH_FIELDS);
 
     final String sizeString = getTableProperty(tableProperties, jc, DruidConstants.DRUID_SKETCH_THETA_SIZE);
-    final String druidHllLgK = getTableProperty(tableProperties, jc, Constants.DRUID_HLL_LG_K);
+    final String druidHllLgK = getTableProperty(tableProperties, jc, DruidConstants.DRUID_HLL_LG_K);
 
     int lgk = HllSketchAggregatorFactory.DEFAULT_LG_K;
     if (druidHllLgK != null) {
@@ -847,7 +847,7 @@ public final class DruidStorageHandlerUtils {
       }
     }
 
-    String druidHllTgtType = getTableProperty(tableProperties, jc, Constants.DRUID_HLL_TGT_TYPE);
+    String druidHllTgtType = getTableProperty(tableProperties, jc, DruidConstants.DRUID_HLL_TGT_TYPE);
 
     if (druidHllTgtType == null ||
             !(druidHllTgtType.equals("HLL_4") ||
@@ -878,73 +878,75 @@ public final class DruidStorageHandlerUtils {
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
 
     for (int i = 0; i < columnTypes.size(); i++) {
+      TypeInfo typeInfo = columnTypes.get(i);
+      if (typeInfo instanceof ListTypeInfo) {
+        String dColumnName = columnNames.get(i);
+        LOG.info("add " + dColumnName + " as mv dim");
+        dimensions.add(new StringDimensionSchema(dColumnName));
+      } else if (typeInfo instanceof PrimitiveTypeInfo) {
+        LOG.info("column type is: " + columnTypes.get(i) + ", column name is: " + columnNames.get(i));
+        // count distinct algorithm for druid
+        String dColumnName = columnNames.get(i);
+        if (hllFields.contains(dColumnName)) {
+          aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory(dColumnName,
+                  dColumnName, lgk,
+                  druidHllTgtType));
+          continue;
+        } else if (thetaFields.contains(dColumnName)) {
+          aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory(dColumnName,
+                  dColumnName, size));
+          continue;
+        }
 
-      LOG.info("column type is: " + columnTypes.get(i) + ", column name is: " + columnNames.get(i));
-      // count distinct algorithm for druid
-      String dColumnName = columnNames.get(i);
-      if (hllFields.contains(dColumnName)) {
-        aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory("hcd_" + dColumnName,
-                dColumnName, lgk,
-                druidHllTgtType));
-        continue;
-      } else if (thetaFields.contains(dColumnName)) {
-        aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("scd_" + dColumnName,
-                dColumnName, size));
-        continue;
+        final PrimitiveObjectInspector.PrimitiveCategory
+                primitiveCategory =
+                ((PrimitiveTypeInfo) columnTypes.get(i)).getPrimitiveCategory();
+        AggregatorFactory af;
+        switch (primitiveCategory) {
+          case BYTE:
+          case SHORT:
+          case INT:
+          case LONG:
+            af = new LongSumAggregatorFactory(columnNames.get(i), columnNames.get(i));
+            break;
+          case FLOAT:
+            af = new FloatSumAggregatorFactory(columnNames.get(i), columnNames.get(i));
+            break;
+          case DOUBLE:
+            af = new DoubleSumAggregatorFactory(columnNames.get(i), columnNames.get(i));
+            break;
+          case DECIMAL:
+            throw new UnsupportedOperationException(String.format("Druid does not support decimal column type cast column "
+                    + "[%s] to double", columnNames.get(i)));
+          case TIMESTAMP:
+            // Granularity column
+            String tColumnName = columnNames.get(i);
+            if (!tColumnName.equals(Constants.DRUID_TIMESTAMP_GRANULARITY_COL_NAME)
+                    && !tColumnName.equals(DruidConstants.DEFAULT_TIMESTAMP_COLUMN)) {
+              throw new IllegalArgumentException("Dimension "
+                      + tColumnName
+                      + " does not have STRING type: "
+                      + primitiveCategory);
+            }
+            continue;
+          default:
+            // Dimension
+            if (PrimitiveObjectInspectorUtils.getPrimitiveGrouping(primitiveCategory)
+                    != PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP
+                    && primitiveCategory != PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN) {
+              throw new IllegalArgumentException("Dimension "
+                      + dColumnName
+                      + " does not have STRING type: "
+                      + primitiveCategory);
+            }
+            if (!excludedDimensions.contains(dColumnName)) {
+              LOG.info("add " + dColumnName + " as normal dim");
+              dimensions.add(new StringDimensionSchema(dColumnName));
+            }
+            continue;
+        }
+        aggregatorFactoryBuilder.add(af);
       }
-
-      final PrimitiveObjectInspector.PrimitiveCategory
-          primitiveCategory =
-          ((PrimitiveTypeInfo) columnTypes.get(i)).getPrimitiveCategory();
-      AggregatorFactory af;
-      switch (primitiveCategory) {
-      case BYTE:
-      case SHORT:
-      case INT:
-      case LONG:
-        af = new LongSumAggregatorFactory(columnNames.get(i), columnNames.get(i));
-        break;
-      case FLOAT:
-        af = new FloatSumAggregatorFactory(columnNames.get(i), columnNames.get(i));
-        break;
-      case DOUBLE:
-        af = new DoubleSumAggregatorFactory(columnNames.get(i), columnNames.get(i));
-        break;
-      case DECIMAL:
-        throw new UnsupportedOperationException(String.format("Druid does not support decimal column type cast column "
-            + "[%s] to double", columnNames.get(i)));
-      case TIMESTAMP:
-        // Granularity column
-        String tColumnName = columnNames.get(i);
-        if (!tColumnName.equals(Constants.DRUID_TIMESTAMP_GRANULARITY_COL_NAME)
-            && !tColumnName.equals(DruidConstants.DEFAULT_TIMESTAMP_COLUMN)) {
-          throw new IllegalArgumentException("Dimension "
-              + tColumnName
-              + " does not have STRING type: "
-              + primitiveCategory);
-        }
-        continue;
-      default:
-        // Dimension
-        if (PrimitiveObjectInspectorUtils.getPrimitiveGrouping(primitiveCategory)
-            != PrimitiveObjectInspectorUtils.PrimitiveGrouping.STRING_GROUP
-            && primitiveCategory != PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN) {
-          throw new IllegalArgumentException("Dimension "
-              + dColumnName
-              + " does not have STRING type: "
-              + primitiveCategory);
-        }
-        if (!excludedDimensions.contains(dColumnName)) {
-          if (mvDimensions.contains(dColumnName)) {
-            LOG.info("add "+dColumnName+" as mv dim");
-          } else {
-            LOG.info("add " + dColumnName + " as normal dim");
-          }
-          dimensions.add(new StringDimensionSchema(dColumnName));
-        }
-        continue;
-      }
-      aggregatorFactoryBuilder.add(af);
     }
     ImmutableList<AggregatorFactory> aggregatorFactories = aggregatorFactoryBuilder.build();
     return Pair.of(dimensions, aggregatorFactories.toArray(new AggregatorFactory[0]));

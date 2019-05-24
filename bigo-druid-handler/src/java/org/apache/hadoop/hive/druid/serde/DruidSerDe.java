@@ -35,12 +35,12 @@ import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.hive.serde2.SerDeException;
 import org.apache.hadoop.hive.serde2.SerDeSpec;
 import org.apache.hadoop.hive.serde2.SerDeStats;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.StructField;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.lazybinary.objectinspector.LazyBinaryListObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.*;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.*;
+import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
+import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.StringUtils;
@@ -52,7 +52,6 @@ import java.io.InputStream;
 import java.sql.Timestamp;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * DruidSerDe that is used to  deserialize objects from a Druid data source.
@@ -62,7 +61,7 @@ import java.util.stream.Collectors;
   private static final Logger LOG = LoggerFactory.getLogger(DruidSerDe.class);
 
   private String[] columns;
-  private PrimitiveTypeInfo[] types;
+  private TypeInfo[] types;
   private ObjectInspector inspector;
 
   @Override public void initialize(Configuration configuration, Properties properties) throws SerDeException {
@@ -94,21 +93,33 @@ import java.util.stream.Collectors;
               + "') not specified in create table; list of columns is : "
               + properties.getProperty(serdeConstants.LIST_COLUMNS));
     }
-    final List<PrimitiveTypeInfo>
-            columnTypes =
-            Utilities.getColumnTypes(properties)
-                    .stream()
-                    .map(TypeInfoFactory::getPrimitiveTypeInfo)
-                    .collect(Collectors.toList())
-                    .stream()
-                    .collect(Collectors.toList());
-    final List<ObjectInspector>
-            inspectors =
-            columnTypes.stream()
-                    .map(PrimitiveObjectInspectorFactory::getPrimitiveJavaObjectInspector)
-                    .collect(Collectors.toList());
+    List<TypeInfo> columnTypes = new ArrayList<>();
+    List<String> typeNames = Utilities.getColumnTypes(properties);
+    for (String typeName: typeNames) {
+      LOG.info("type name is :" + typeName);
+      if (typeName.startsWith("array<") && typeName.endsWith(">")) {
+        String elementTypeName = typeName.substring(6, typeName.length() - 1);
+        TypeInfo typeInfo = TypeInfoFactory.getPrimitiveTypeInfo(elementTypeName);
+        columnTypes.add(TypeInfoFactory.getListTypeInfo(typeInfo));
+      } else {
+        columnTypes.add(TypeInfoFactory.getPrimitiveTypeInfo(typeName));
+      }
+    }
+
+    final List<ObjectInspector> inspectors = new ArrayList<>();
+    for (TypeInfo info: columnTypes) {
+      if (info.getTypeName().startsWith("array<") && info.getTypeName().endsWith(">")) {
+        ListTypeInfo listTypeInfo = (ListTypeInfo)info;
+        PrimitiveTypeInfo element = (PrimitiveTypeInfo) listTypeInfo.getListElementTypeInfo();
+        inspectors.add(ObjectInspectorFactory.getStandardListObjectInspector(
+                PrimitiveObjectInspectorFactory.getPrimitiveJavaObjectInspector(element)));
+      } else {
+        inspectors.add(PrimitiveObjectInspectorFactory.
+                getPrimitiveJavaObjectInspector((PrimitiveTypeInfo)info));
+      }
+    }
     columns = columnNames.toArray(new String[0]);
-    types = columnTypes.toArray(new PrimitiveTypeInfo[0]);
+    types = columnTypes.toArray(new TypeInfo[0]);
     inspector = ObjectInspectorFactory.getStandardStructObjectInspector(columnNames, inspectors);
   }
 
@@ -214,56 +225,78 @@ import java.util.stream.Collectors;
     // We deserialize the result
     final Map<String, Object> value = new HashMap<>();
     for (int i = 0; i < columns.length; i++) {
+
       if (values.get(i) == null) {
         // null, we just add it
         value.put(columns[i], null);
         continue;
       }
-      final Object res;
-      switch (types[i].getPrimitiveCategory()) {
-        case TIMESTAMP:
-          res = ((TimestampObjectInspector) fields.get(i).getFieldObjectInspector())
-                  .getPrimitiveJavaObject(
-                          values.get(i)).toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli();
-          break;
-        case BYTE:
-          res = ((ByteObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
-          break;
-        case SHORT:
-          res = ((ShortObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
-          break;
-        case INT:
-          res = ((IntObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
-          break;
-        case LONG:
-          res = ((LongObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
-          break;
-        case FLOAT:
-          res = ((FloatObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
-          break;
-        case DOUBLE:
-          res = ((DoubleObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
-          break;
-        case CHAR:
-          res =
-                  ((HiveCharObjectInspector) fields.get(i).getFieldObjectInspector()).getPrimitiveJavaObject(values.get(i))
-                          .getValue();
-          break;
-        case VARCHAR:
-          res =
-                  ((HiveVarcharObjectInspector) fields.get(i).getFieldObjectInspector()).getPrimitiveJavaObject(values.get(i))
-                          .getValue();
-          break;
-        case STRING:
-          res = ((StringObjectInspector) fields.get(i).getFieldObjectInspector()).getPrimitiveJavaObject(values.get(i));
-          break;
-        case BOOLEAN:
-          res = ((BooleanObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i)) ? 1L : 0L;
-          break;
-        default:
-          throw new SerDeException("Unsupported type: " + types[i].getPrimitiveCategory());
+      TypeInfo typeInfo = types[i];
+      if (typeInfo instanceof PrimitiveTypeInfo) {
+        PrimitiveTypeInfo primitiveTypeInfo = (PrimitiveTypeInfo) typeInfo;
+        final Object res;
+        switch (primitiveTypeInfo.getPrimitiveCategory()) {
+          case TIMESTAMP:
+            res = ((TimestampObjectInspector) fields.get(i).getFieldObjectInspector())
+                    .getPrimitiveJavaObject(
+                            values.get(i)).toLocalDateTime().toInstant(ZoneOffset.UTC).toEpochMilli();
+            break;
+          case BYTE:
+            res = ((ByteObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
+            break;
+          case SHORT:
+            res = ((ShortObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
+            break;
+          case INT:
+            res = ((IntObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
+            break;
+          case LONG:
+            res = ((LongObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
+            break;
+          case FLOAT:
+            res = ((FloatObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
+            break;
+          case DOUBLE:
+            res = ((DoubleObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i));
+            break;
+          case CHAR:
+            res =
+                    ((HiveCharObjectInspector) fields.get(i).getFieldObjectInspector()).getPrimitiveJavaObject(values.get(i))
+                            .getValue();
+            break;
+          case VARCHAR:
+            res =
+                    ((HiveVarcharObjectInspector) fields.get(i).getFieldObjectInspector()).getPrimitiveJavaObject(values.get(i))
+                            .getValue();
+            break;
+          case STRING:
+            res = ((StringObjectInspector) fields.get(i).getFieldObjectInspector()).getPrimitiveJavaObject(values.get(i));
+            break;
+          case BOOLEAN:
+            res = ((BooleanObjectInspector) fields.get(i).getFieldObjectInspector()).get(values.get(i)) ? 1L : 0L;
+            break;
+          default:
+            throw new SerDeException("Unsupported type: " + primitiveTypeInfo.getPrimitiveCategory());
+        }
+        value.put(columns[i], res);
+      } else if (typeInfo instanceof ListTypeInfo) {
+        ListTypeInfo listTypeInfo = (ListTypeInfo) typeInfo;
+        PrimitiveTypeInfo primitiveTypeInfo = (PrimitiveTypeInfo) listTypeInfo.getListElementTypeInfo();
+        final Object res;
+        switch (primitiveTypeInfo.getPrimitiveCategory()) {
+          case BYTE:
+          case SHORT:
+          case INT:
+          case LONG:
+          case STRING:
+           ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i).getFieldObjectInspector();
+           res = listObjectInspector.getList(values.get(i));
+           break;
+          default:
+            throw new SerDeException("Unsupported type: array<" + listTypeInfo.getCategory() + ">");
+        }
+        value.put(columns[i], res);
       }
-      value.put(columns[i], res);
     }
     //Extract the partitions keys segments granularity and partition key if any
     // First Segment Granularity has to be here.

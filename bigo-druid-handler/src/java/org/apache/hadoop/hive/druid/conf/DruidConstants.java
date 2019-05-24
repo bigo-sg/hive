@@ -34,6 +34,15 @@ public final class DruidConstants {
 
   public static final String DRUID_ROLLUP = "druid.rollup";
 
+  public static final String DRUID_HLL_LG_K = "druid.hll.lg.k";
+  /*
+   * HLL_4(default),The type of the target HLL sketch. Must be "HLL_4", "HLL_6" or "HLL_8"
+   * */
+  public static final String DRUID_HLL_TGT_TYPE = "druid.hll.tgt.type";
+  /*fields used to calculate count distinct with hll algorithm,for example uid,vid*/
+  public static final String DRUID_HLL_SKETCH_FIELDS = "druid.hll.fields";
+  /*fields used to calculate count distinct with theta algorithm,for example uid,vid*/
+  public static final String DRUID_THETA_SKETCH_FIELDS = "druid.theta.fields";
   // see https://datasketches.github.io/docs/Theta/ThetaSize.html
   // Must be a power of 2. Internally, size refers to the maximum number of entries sketch object
   // will retain. Higher size means higher accuracy but more space to store sketches.
