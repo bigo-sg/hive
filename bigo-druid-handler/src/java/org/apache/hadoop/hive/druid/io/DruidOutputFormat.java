@@ -118,7 +118,7 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
     Set<String> mvDimensions = DruidStorageHandlerUtils.parseFields(multiValueDimensions);
 
     Pair<List<DimensionSchema>, AggregatorFactory[]> dimensionsAndAggregates = DruidStorageHandlerUtils
-        .getDimensionsAndAggregates(columnNames, columnTypes, mvDimensions, jc, tableProperties);
+        .getDimensionsAndAggregates(columnNames, columnTypes, jc, tableProperties);
     final InputRowParser inputRowParser = new MapInputRowParser(new TimeAndDimsParseSpec(
             new TimestampSpec(DruidConstants.DEFAULT_TIMESTAMP_COLUMN, "auto", null),
             new DimensionsSpec(dimensionsAndAggregates.lhs, Lists
