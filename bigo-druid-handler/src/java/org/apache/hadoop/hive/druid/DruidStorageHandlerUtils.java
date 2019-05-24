@@ -889,12 +889,12 @@ public final class DruidStorageHandlerUtils {
         // count distinct algorithm for druid
         String dColumnName = columnNames.get(i);
         if (hllFields.contains(dColumnName)) {
-          aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory("hcd_" + dColumnName,
+          aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory(dColumnName,
                   dColumnName, lgk,
                   druidHllTgtType));
           continue;
         } else if (thetaFields.contains(dColumnName)) {
-          aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory("scd_" + dColumnName,
+          aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory(dColumnName,
                   dColumnName, size));
           continue;
         }

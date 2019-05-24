@@ -55,12 +55,10 @@ public class HiveListTransform implements Transform
         @Override
         public Object eval(Row row) {
             Object filedValue = row.getRaw(fieldName);
-            LOG.info("row:" + row + "origin row is :" + filedValue);
             if (filedValue instanceof List) {
-                LOG.info("origin row is : list");
                 return filedValue;
             }
-            return "test";
+            return filedValue;
         }
     }
 

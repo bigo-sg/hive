@@ -218,19 +218,10 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
         new MapBasedInputRow(timestamp,
             dataSchema.getParser().getParseSpec().getDimensionsSpec().getDimensionNames(),
             record.getValue());
-//    record.getValue().forEach((k, v) -> LOG.info("-------------key:" + k + "-------value:" + v));
 
     // support for expressions and multi-value dimensions
     final InputRow
             transformedInputRow = dataSchema.getTransformSpec().toTransformer().transform(inputRow);
-    if (new Random().nextInt(1000) == 555) {
-      transformedInputRow.getDimensions().stream().forEach(new Consumer<String>() {
-        @Override
-        public void accept(String s) {
-          LOG.info("" + s + ":" + transformedInputRow.getDimension(s));
-        }
-      });
-    }
     try {
 
       if (partitionNumber != -1 && maxPartitionSize == -1) {

@@ -299,11 +299,14 @@ import java.util.stream.Collectors;
         PrimitiveTypeInfo primitiveTypeInfo = (PrimitiveTypeInfo) listTypeInfo.getListElementTypeInfo();
         final Object res;
         switch (primitiveTypeInfo.getPrimitiveCategory()) {
-           case STRING:
-             ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i).getFieldObjectInspector();
-             List<?> listObjectInspectorList = listObjectInspector.getList(values.get(i));
-             res = listObjectInspectorList;
-            break;
+          case BYTE:
+          case SHORT:
+          case INT:
+          case LONG:
+          case STRING:
+           ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i).getFieldObjectInspector();
+           res = listObjectInspector.getList(values.get(i));
+           break;
           default:
             throw new SerDeException("Unsupported type: array<" + listTypeInfo.getCategory() + ">");
         }
