@@ -284,6 +284,11 @@ import java.util.*;
         PrimitiveTypeInfo primitiveTypeInfo = (PrimitiveTypeInfo) listTypeInfo.getListElementTypeInfo();
         final Object res;
         switch (primitiveTypeInfo.getPrimitiveCategory()) {
+          case FLOAT:
+          case DOUBLE:
+          case CHAR:
+          case VARCHAR:
+          case BOOLEAN:
           case BYTE:
           case SHORT:
           case INT:
