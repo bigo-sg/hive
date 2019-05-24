@@ -826,7 +826,6 @@ public final class DruidStorageHandlerUtils {
       getDimensionsAndAggregates(
               List<String> columnNames,
               List<TypeInfo> columnTypes,
-              Set<String> mvDimensions,
               JobConf jc,
               Properties tableProperties
               ) {

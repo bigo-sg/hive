@@ -52,7 +52,6 @@ import java.io.InputStream;
 import java.sql.Timestamp;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * DruidSerDe that is used to  deserialize objects from a Druid data source.
@@ -107,15 +106,6 @@ import java.util.stream.Collectors;
       }
     }
 
-//    final List<PrimitiveTypeInfo>
-//            columnTypes =
-//            Utilities.getColumnTypes(properties)
-//                    .stream()
-//                    .map(TypeInfoFactory::getPrimitiveTypeInfo)
-//                    .collect(Collectors.toList())
-//                    .stream()
-//                    .collect(Collectors.toList());
-
     final List<ObjectInspector> inspectors = new ArrayList<>();
     for (TypeInfo info: columnTypes) {
       if (info.getTypeName().startsWith("array<") && info.getTypeName().endsWith(">")) {
@@ -128,11 +118,6 @@ import java.util.stream.Collectors;
                 getPrimitiveJavaObjectInspector((PrimitiveTypeInfo)info));
       }
     }
-//    final List<ObjectInspector>
-//            inspectors =
-//            columnTypes.stream()
-//                    .map(PrimitiveObjectInspectorFactory::getPrimitiveJavaObjectInspector)
-//                    .collect(Collectors.toList());
     columns = columnNames.toArray(new String[0]);
     types = columnTypes.toArray(new TypeInfo[0]);
     inspector = ObjectInspectorFactory.getStandardStructObjectInspector(columnNames, inspectors);
