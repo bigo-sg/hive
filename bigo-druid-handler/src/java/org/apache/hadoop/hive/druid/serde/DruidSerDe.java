@@ -293,7 +293,7 @@ import java.util.stream.Collectors;
           default:
             throw new SerDeException("Unsupported type: " + primitiveTypeInfo.getPrimitiveCategory());
         }
-        LOG.info("value["+i+"]:" + value.get(i) + ", column["+i+"]:" + columns[i] + ",value:" + res);
+        LOG.info("value["+i+"]:" + values.get(i) + ", column["+i+"]:" + columns[i] + ",value:" + res);
         value.put(columns[i], res);
       } else if (typeInfo instanceof ListTypeInfo) {
         ListTypeInfo listTypeInfo = (ListTypeInfo) typeInfo;
@@ -303,9 +303,9 @@ import java.util.stream.Collectors;
            case STRING:
 //             LOG.info("field type is:" + fields.get(i).getFieldObjectInspector());
              ListObjectInspector listObjectInspector = (LazyBinaryListObjectInspector) fields.get(i).getFieldObjectInspector();
-             List<?> listObjectInspectorList = listObjectInspector.getList(value.get(i));
+             List<?> listObjectInspectorList = listObjectInspector.getList(values.get(i));
              res = listObjectInspectorList;
-             LOG.info("name:"+value.get(i)+",field type is:" + listObjectInspectorList);
+             LOG.info("name:"+values.get(i)+",field type is:" + listObjectInspectorList);
              List<String> result = new ArrayList<>();
              if (listObjectInspectorList != null) {
                for (int j = 0; j < listObjectInspectorList.size(); ++j) {
