@@ -60,7 +60,7 @@ public class AlterTableDesc extends DDLDesc implements Serializable {
     private AlterTableTypes(String name) { this.name = name; }
     public String getName() { return name; }
     public static final List<AlterTableTypes> nonNativeTableAllowedTypes = Arrays
-            .asList(new AlterTableTypes[] { ADDPROPS, DROPPROPS, RENAMECOLUMN, ADDCOLS });
+            .asList(new AlterTableTypes[] { ADDPROPS, DROPPROPS, RENAMECOLUMN, ADDCOLS, RENAME, REPLACECOLS });
   }
 
   public static enum ProtectModeType {
