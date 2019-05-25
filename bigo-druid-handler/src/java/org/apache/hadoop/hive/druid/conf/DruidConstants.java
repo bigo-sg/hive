@@ -43,6 +43,8 @@ public final class DruidConstants {
   public static final String DRUID_HLL_SKETCH_FIELDS = "druid.hll.fields";
   /*fields used to calculate count distinct with theta algorithm,for example uid,vid*/
   public static final String DRUID_THETA_SKETCH_FIELDS = "druid.theta.fields";
+  /*fields used to calculate count distinct with theta algorithm,for example uid,vid*/
+  public static final String DRUID_EXCLUDE_FIELDS = "druid.exclude.fields";
   // see https://datasketches.github.io/docs/Theta/ThetaSize.html
   // Must be a power of 2. Internally, size refers to the maximum number of entries sketch object
   // will retain. Higher size means higher accuracy but more space to store sketches.
