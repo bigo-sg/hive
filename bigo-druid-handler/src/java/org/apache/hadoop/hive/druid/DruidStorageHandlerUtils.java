@@ -830,29 +830,39 @@ public final class DruidStorageHandlerUtils {
               Properties tableProperties
               ) {
 
-    final String druidHllFields = getTableProperty(tableProperties, jc,
-            DruidConstants.DRUID_HLL_SKETCH_FIELDS).
-            replaceAll(" ", "").replaceAll("\t", "").toLowerCase();
+    String druidHllFields = getTableProperty(tableProperties, jc,
+            DruidConstants.DRUID_HLL_SKETCH_FIELDS);
+    if (druidHllFields != null) {
+      druidHllFields = druidHllFields.replaceAll(" ", "").replaceAll("\t", "").toLowerCase();
+    }
 
-    final String druidThetaFields = getTableProperty(tableProperties, jc,
-            DruidConstants.DRUID_THETA_SKETCH_FIELDS).
-            replaceAll(" ", "").replaceAll("\t", "").toLowerCase();
+    String druidThetaFields = getTableProperty(tableProperties, jc,
+            DruidConstants.DRUID_THETA_SKETCH_FIELDS);
+    if (druidThetaFields != null) {
+      druidThetaFields = druidThetaFields.replaceAll(" ", "").replaceAll("\t", "").toLowerCase();
+    }
 
-    final String druidExcludedDimensions = getTableProperty(tableProperties, jc,
-            DruidConstants.DRUID_EXCLUDE_FIELDS).
-            replaceAll(" ", "").replaceAll("\t", "").toLowerCase();
+    String druidExcludedDimensions = getTableProperty(tableProperties, jc,
+            DruidConstants.DRUID_EXCLUDE_FIELDS);
+    if (druidExcludedDimensions != null) {
+      druidExcludedDimensions = druidExcludedDimensions.replaceAll(" ", "").replaceAll("\t", "").toLowerCase();
+    }
 
-    final String sizeString = getTableProperty(tableProperties, jc,
-            DruidConstants.DRUID_SKETCH_THETA_SIZE).
-            replaceAll(" ", "").replaceAll("\t", "");
-    final String druidHllLgK = getTableProperty(tableProperties, jc,
-            DruidConstants.DRUID_HLL_LG_K).
-            replaceAll(" ", "").replaceAll("\t", "");
+    String sizeString = getTableProperty(tableProperties, jc,
+            DruidConstants.DRUID_SKETCH_THETA_SIZE);
+    if (sizeString != null) {
+      sizeString = sizeString.replaceAll(" ", "").replaceAll("\t", "");
+    }
+    String druidHllLgK = getTableProperty(tableProperties, jc,
+            DruidConstants.DRUID_HLL_LG_K);
+    if (druidHllLgK != null) {
+      druidHllLgK = druidHllLgK.replaceAll(" ", "").replaceAll("\t", "");
+    }
 
     int lgk = HllSketchAggregatorFactory.DEFAULT_LG_K;
     if (druidHllLgK != null) {
       Integer lgk1 = Integer.parseInt(druidHllLgK);
-      if (lgk1 != null && lgk1 > 2 >> 4 && lgk1 < 2 << 21) {
+      if (lgk1 != null && lgk1 > 2 >> 4 && lgk1 < 2 >> 21) {
         lgk = lgk1;
       }
     }
