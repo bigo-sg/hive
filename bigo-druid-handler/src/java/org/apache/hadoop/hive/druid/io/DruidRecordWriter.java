@@ -216,15 +216,8 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
     final int
         partitionNumber =
         Math.toIntExact((long) record.getValue().getOrDefault(DruidConstants.DRUID_SHARD_KEY_COL_NAME, -1L));
-    if (timePartition.size() < 30000) {
-      String da = "_________" + timestamp + "_____" + partitionNumber;
-      timePartition.add(da);
-    }
-    if (timePartition.size() == 20000) {
-      for (String p: timePartition) {
-        LOG.info(p);
-      }
-    }
+    String da = timestamp + "_____" + partitionNumber;
+    timePartition.add(da);
     final InputRow
         inputRow =
         new MapBasedInputRow(timestamp,
@@ -252,7 +245,9 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
                 ", partitionNumber="+partitionNumber);
             LOG.info("currentOpenSegment.getInterval()="+currentOpenSegment.getInterval()+
                 "interval="+interval);
-            LOG.info("push a segment of partition " + currentOpenSegment.getShardSpec().getPartitionNum());
+            LOG.info("time size:" + timePartition.size());
+            timePartition.clear();
+
 //            pushSegments(ImmutableList.of(currentOpenSegment));
 //            currentOpenSegment =
 //                new SegmentIdWithShardSpec(dataSchema.getDataSource(),
