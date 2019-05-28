@@ -254,12 +254,12 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             LOG.info("time size:" + timePartition.size());
             timePartition.clear();
 
-//            pushSegments(ImmutableList.of(currentOpenSegment));
-//            currentOpenSegment =
-//                new SegmentIdWithShardSpec(dataSchema.getDataSource(),
-//                    interval,
-//                    tuningConfig.getVersioningPolicy().getVersion(interval),
-//                    new LinearShardSpec(partitionNumber));
+            pushSegments(ImmutableList.of(currentOpenSegment));
+            currentOpenSegment =
+                new SegmentIdWithShardSpec(dataSchema.getDataSource(),
+                    interval,
+                    tuningConfig.getVersioningPolicy().getVersion(interval),
+                    new LinearShardSpec(partitionNumber));
           }
         } else {
           LOG.info("generate a segment with partition num of " + partitionNumber);
