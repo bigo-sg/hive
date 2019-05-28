@@ -310,7 +310,7 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
                 );
         final ExprNodeGenericFuncDesc concatKey = ExprNodeGenericFuncDesc
                 .newInstance(new GenericUDFConcatWS(),
-                        Lists.<ExprNodeDesc>newArrayList(timeGraunlarity, randModMax)
+                        Lists.newArrayList(timeGraunlarity, new ExprNodeConstantDesc(TypeInfoFactory.stringTypeInfo, "__"), randModMax)
                 );
         descs.add(concatKey);
         colNames.add(Constants.DRUID_SHARD_KEY_COL_NAME);
