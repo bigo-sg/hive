@@ -306,9 +306,9 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
                 .newInstance(new GenericUDFOPMod(),
                         Lists.newArrayList(random, targetNumShardDescNode)
                 );
-        descs.add(randModMax);
-        colNames.add(Constants.DRUID_SHARD_KEY_COL_NAME);
-        selRS.getSignature().add(partitionKeyCi);
+//        descs.add(randModMax);
+//        colNames.add(Constants.DRUID_SHARD_KEY_COL_NAME);
+//        selRS.getSignature().add(partitionKeyCi);
       }
 
       // Create SelectDesc
