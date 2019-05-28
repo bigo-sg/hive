@@ -165,6 +165,7 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
       // Get the key positions
       List<Integer> keyPositions = new ArrayList<>();
       keyPositions.add(allRSCols.size() - 1);
+      keyPositions.add(allRSCols.size() - 2);
       List<Integer> sortOrder = new ArrayList<Integer>(1);
       sortOrder.add(1); // asc
       List<Integer> sortNullOrder = new ArrayList<Integer>(1);
@@ -308,11 +309,11 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
                 .newInstance(new GenericUDFOPMod(),
                         Lists.newArrayList(random, targetNumShardDescNode)
                 );
-        final ExprNodeGenericFuncDesc concatKey = ExprNodeGenericFuncDesc
-                .newInstance(new GenericUDFConcatWS(),
-                        Lists.newArrayList(timeGraunlarity, new ExprNodeConstantDesc(TypeInfoFactory.stringTypeInfo, "__"), randModMax)
-                );
-        descs.add(concatKey);
+//        final ExprNodeGenericFuncDesc concatKey = ExprNodeGenericFuncDesc
+//                .newInstance(new GenericUDFConcatWS(),
+//                        Lists.newArrayList(timeGraunlarity, new ExprNodeConstantDesc(TypeInfoFactory.stringTypeInfo, "__"), randModMax)
+//                );
+        descs.add(randModMax);
         colNames.add(Constants.DRUID_SHARD_KEY_COL_NAME);
         selRS.getSignature().add(partitionKeyCi);
       }
