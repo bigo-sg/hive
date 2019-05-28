@@ -274,10 +274,12 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
           throw new SemanticException("Granularity for Druid segment not recognized");
       }
       ExprNodeDesc expr = new ExprNodeColumnDesc(parentCols.get(timestampPos));
-      descs.add(new ExprNodeGenericFuncDesc(
+      final ExprNodeGenericFuncDesc timeGraunlarity = new ExprNodeGenericFuncDesc(
               TypeInfoFactory.timestampTypeInfo,
               new GenericUDFBridge(udfName, false, udfClass.getName()),
-              Lists.newArrayList(expr)));
+              Lists.newArrayList(expr));
+
+      descs.add(timeGraunlarity);
       colNames.add(Constants.DRUID_TIMESTAMP_GRANULARITY_COL_NAME);
       // Add granularity to the row schema
       ColumnInfo ci = new ColumnInfo(Constants.DRUID_TIMESTAMP_GRANULARITY_COL_NAME, TypeInfoFactory.timestampTypeInfo,
@@ -306,9 +308,13 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
                 .newInstance(new GenericUDFOPMod(),
                         Lists.newArrayList(random, targetNumShardDescNode)
                 );
-//        descs.add(randModMax);
-//        colNames.add(Constants.DRUID_SHARD_KEY_COL_NAME);
-//        selRS.getSignature().add(partitionKeyCi);
+        final ExprNodeGenericFuncDesc concatKey = ExprNodeGenericFuncDesc
+                .newInstance(new GenericUDFConcatWS(),
+                        Lists.<ExprNodeDesc>newArrayList(timeGraunlarity, randModMax)
+                );
+        descs.add(concatKey);
+        colNames.add(Constants.DRUID_SHARD_KEY_COL_NAME);
+        selRS.getSignature().add(partitionKeyCi);
       }
 
       // Create SelectDesc
