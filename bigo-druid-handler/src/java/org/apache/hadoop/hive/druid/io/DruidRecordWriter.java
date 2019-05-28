@@ -251,7 +251,7 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             LOG.info("currentOpenSegment.getShardSpec().getPartitionNum()="+currentOpenSegment.getShardSpec().getPartitionNum() +
                 ", partitionNumber="+partitionNumber);
             LOG.info("currentOpenSegment.getInterval()="+currentOpenSegment.getInterval()+
-                "interval="+interval + "time:" + timeAsString(new Date(timestamp - 1000*60*8)));
+                ", interval="+interval + " time:" + timeAsString(new Date(timestamp - 1000*60*8)));
             LOG.info("time size:" + timePartition.size());
             timePartition.clear();
 
