@@ -216,11 +216,11 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
     final int
         partitionNumber =
         Math.toIntExact((long) record.getValue().getOrDefault(DruidConstants.DRUID_SHARD_KEY_COL_NAME, -1L));
-    if (timePartition.size() < 3000000) {
+    if (timePartition.size() < 30000) {
       String da = "_________" + timestamp + "_____" + partitionNumber;
       timePartition.add(da);
     }
-    if (timePartition.size() == 2000000) {
+    if (timePartition.size() == 20000) {
       for (String p: timePartition) {
         LOG.info(p);
       }
