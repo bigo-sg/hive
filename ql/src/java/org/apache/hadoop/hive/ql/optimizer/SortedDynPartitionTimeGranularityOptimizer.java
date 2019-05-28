@@ -99,6 +99,8 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
     private final Logger LOG = LoggerFactory.getLogger(SortedDynPartitionTimeGranularityOptimizer.class);
     protected ParseContext parseCtx;
     private int targetShardsPerGranularity = 0;
+    private int granularityKeyPos = -1;
+    private int partitionKeyPos = -1;
 
     public SortedDynamicPartitionProc(ParseContext pCtx) {
       this.parseCtx = pCtx;
@@ -150,7 +152,10 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
       Operator<? extends OperatorDesc> fsParent = fsOp.getParentOperators().get(0);
       fsParent = fsOp.getParentOperators().get(0);
       fsParent.getChildOperators().clear();
-
+      if (targetShardsPerGranularity > 0) {
+        partitionKeyPos = fsParent.getSchema().getSignature().size() + 1;
+      }
+      granularityKeyPos = fsParent.getSchema().getSignature().size();
       // Create SelectOp with granularity column
       Operator<? extends OperatorDesc> granularitySelOp = getGranularitySelOp(fsParent,
               segmentGranularity
@@ -163,13 +168,19 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
         allRSCols.add(new ExprNodeColumnDesc(ci));
       }
       // Get the key positions
-      List<Integer> keyPositions = new ArrayList<>();
-      keyPositions.add(allRSCols.size() - 1);
-      keyPositions.add(allRSCols.size() - 2);
-      List<Integer> sortOrder = new ArrayList<Integer>(1);
-      sortOrder.add(1); // asc
-      List<Integer> sortNullOrder = new ArrayList<Integer>(1);
-      sortNullOrder.add(0); // nulls first
+      final List<Integer> keyPositions;
+      final List<Integer> sortOrder;
+      final List<Integer> sortNullOrder;
+      //Order matters, assuming later that __time_granularity comes first then __druidPartitionKey
+      if (targetShardsPerGranularity > 0) {
+        keyPositions = Lists.newArrayList(granularityKeyPos, partitionKeyPos);
+        sortOrder = Lists.newArrayList(1, 1); // asc
+        sortNullOrder = Lists.newArrayList(0, 0); // nulls first
+      } else {
+        keyPositions = Lists.newArrayList(granularityKeyPos);
+        sortOrder = Lists.newArrayList(1); // asc
+        sortNullOrder = Lists.newArrayList(0); // nulls first
+      }
       ReduceSinkOperator rsOp = getReduceSinkOp(keyPositions, sortOrder,
           sortNullOrder, allRSCols, granularitySelOp);
 
@@ -309,10 +320,6 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
                 .newInstance(new GenericUDFOPMod(),
                         Lists.newArrayList(random, targetNumShardDescNode)
                 );
-//        final ExprNodeGenericFuncDesc concatKey = ExprNodeGenericFuncDesc
-//                .newInstance(new GenericUDFConcatWS(),
-//                        Lists.newArrayList(timeGraunlarity, new ExprNodeConstantDesc(TypeInfoFactory.stringTypeInfo, "__"), randModMax)
-//                );
         descs.add(randModMax);
         colNames.add(Constants.DRUID_SHARD_KEY_COL_NAME);
         selRS.getSignature().add(partitionKeyCi);
