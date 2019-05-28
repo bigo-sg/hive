@@ -211,9 +211,8 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
 
   List<String> timePartition = new ArrayList<>();
   public static String timeAsString(Date date) {
-    Date currentTime = new Date();
     SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    String dateString = formatter.format(currentTime);
+    String dateString = formatter.format(date);
     return dateString;
   }
 
