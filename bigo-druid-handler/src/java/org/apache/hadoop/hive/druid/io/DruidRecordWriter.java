@@ -276,8 +276,8 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
       if (!abort) {
         final List<SegmentIdWithShardSpec> segmentsToPush = Lists.newArrayList();
         segmentsToPush.addAll(appenderator.getSegments());
-        LOG.info("push a segment of partition " + currentOpenSegment.getShardSpec().getPartitionNum() +
-        " if you see this log, it means that only one time grunlarity in this node");
+        LOG.info("push a segment if you see this log," +
+                "it means that only one time grunlarity in this node");
         pushSegments(segmentsToPush);
       }
       appenderator.clear();
