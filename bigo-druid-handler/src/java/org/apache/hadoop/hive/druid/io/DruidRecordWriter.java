@@ -208,12 +208,23 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
     }
   }
 
+  List<String> timePartition = new ArrayList<>();
+
   @Override public void write(Writable w) throws IOException {
     DruidWritable record = (DruidWritable) w;
     final long timestamp = (long) record.getValue().get(DruidConstants.DEFAULT_TIMESTAMP_COLUMN);
     final int
         partitionNumber =
         Math.toIntExact((long) record.getValue().getOrDefault(DruidConstants.DRUID_SHARD_KEY_COL_NAME, -1L));
+    if (timePartition.size() < 3000000) {
+      String da = "_________" + timestamp + "_____" + partitionNumber;
+      timePartition.add(da);
+    }
+    if (timePartition.size() == 2000000) {
+      for (String p: timePartition) {
+        LOG.info(p);
+      }
+    }
     final InputRow
         inputRow =
         new MapBasedInputRow(timestamp,
@@ -242,12 +253,12 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             LOG.info("currentOpenSegment.getInterval()="+currentOpenSegment.getInterval()+
                 "interval="+interval);
             LOG.info("push a segment of partition " + currentOpenSegment.getShardSpec().getPartitionNum());
-            pushSegments(ImmutableList.of(currentOpenSegment));
-            currentOpenSegment =
-                new SegmentIdWithShardSpec(dataSchema.getDataSource(),
-                    interval,
-                    tuningConfig.getVersioningPolicy().getVersion(interval),
-                    new LinearShardSpec(partitionNumber));
+//            pushSegments(ImmutableList.of(currentOpenSegment));
+//            currentOpenSegment =
+//                new SegmentIdWithShardSpec(dataSchema.getDataSource(),
+//                    interval,
+//                    tuningConfig.getVersioningPolicy().getVersion(interval),
+//                    new LinearShardSpec(partitionNumber));
           }
         } else {
           LOG.info("generate a segment with partition num of " + partitionNumber);
