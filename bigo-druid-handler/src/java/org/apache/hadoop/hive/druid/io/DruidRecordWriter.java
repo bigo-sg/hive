@@ -128,6 +128,7 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
 
     SegmentIdWithShardSpec retVal;
     if (currentOpenSegment == null) {
+      LOG.info("getSegmentIdentifierAndMaybePush, currentOpenSegment == null");
       currentOpenSegment =
           new SegmentIdWithShardSpec(dataSchema.getDataSource(),
               interval,
@@ -236,6 +237,10 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
         if (currentOpenSegment != null) {
           if (currentOpenSegment.getShardSpec().getPartitionNum() != partitionNumber
               || !currentOpenSegment.getInterval().equals(interval)) {
+            LOG.info("currentOpenSegment.getShardSpec().getPartitionNum()="+currentOpenSegment.getShardSpec().getPartitionNum() +
+                ", partitionNumber="+partitionNumber);
+            LOG.info("currentOpenSegment.getInterval()="+currentOpenSegment.getInterval()+
+                "interval="+interval);
             LOG.info("push a segment of partition " + currentOpenSegment.getShardSpec().getPartitionNum());
             pushSegments(ImmutableList.of(currentOpenSegment));
             currentOpenSegment =
