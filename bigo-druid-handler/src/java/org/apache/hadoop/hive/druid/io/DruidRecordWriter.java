@@ -219,11 +219,9 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
   @Override public void write(Writable w) throws IOException {
     DruidWritable record = (DruidWritable) w;
     final long timestamp = (long) record.getValue().get(DruidConstants.DEFAULT_TIMESTAMP_COLUMN);
-//    final int
-//        partitionNumber =
-//        Math.toIntExact((long) record.getValue().getOrDefault(DruidConstants.DRUID_SHARD_KEY_COL_NAME, -1L));
-    String key = (String) record.getValue().getOrDefault(DruidConstants.DRUID_SHARD_KEY_COL_NAME, "00__-1");
-    final int partitionNumber = Integer.parseInt(key.split("__")[1]);
+    final int
+        partitionNumber =
+        Math.toIntExact((long) record.getValue().getOrDefault(DruidConstants.DRUID_SHARD_KEY_COL_NAME, -1L));
     String da = timestamp + "_____" + partitionNumber;
     timePartition.add(da);
     final InputRow
