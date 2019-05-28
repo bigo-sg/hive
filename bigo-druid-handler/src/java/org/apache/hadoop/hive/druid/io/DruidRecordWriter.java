@@ -236,6 +236,7 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
         if (currentOpenSegment != null) {
           if (currentOpenSegment.getShardSpec().getPartitionNum() != partitionNumber
               || !currentOpenSegment.getInterval().equals(interval)) {
+            LOG.info("push a segment of partition " + currentOpenSegment.getShardSpec().getPartitionNum());
             pushSegments(ImmutableList.of(currentOpenSegment));
             currentOpenSegment =
                 new SegmentIdWithShardSpec(dataSchema.getDataSource(),
@@ -244,6 +245,7 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
                     new LinearShardSpec(partitionNumber));
           }
         } else {
+          LOG.info("generate a segment with partition num of " + partitionNumber);
           currentOpenSegment =
               new SegmentIdWithShardSpec(dataSchema.getDataSource(),
                   interval,
@@ -274,6 +276,8 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
       if (!abort) {
         final List<SegmentIdWithShardSpec> segmentsToPush = Lists.newArrayList();
         segmentsToPush.addAll(appenderator.getSegments());
+        LOG.info("push a segment of partition " + currentOpenSegment.getShardSpec().getPartitionNum() +
+        " if you see this log, it means that only one time grunlarity in this node");
         pushSegments(segmentsToPush);
       }
       appenderator.clear();
