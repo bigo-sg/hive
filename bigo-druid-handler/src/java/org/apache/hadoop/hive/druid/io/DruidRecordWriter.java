@@ -54,6 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -209,6 +210,12 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
   }
 
   List<String> timePartition = new ArrayList<>();
+  public static String timeAsString(Date date) {
+    Date currentTime = new Date();
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    String dateString = formatter.format(currentTime);
+    return dateString;
+  }
 
   @Override public void write(Writable w) throws IOException {
     DruidWritable record = (DruidWritable) w;
@@ -244,7 +251,7 @@ public class DruidRecordWriter implements RecordWriter<NullWritable, DruidWritab
             LOG.info("currentOpenSegment.getShardSpec().getPartitionNum()="+currentOpenSegment.getShardSpec().getPartitionNum() +
                 ", partitionNumber="+partitionNumber);
             LOG.info("currentOpenSegment.getInterval()="+currentOpenSegment.getInterval()+
-                "interval="+interval);
+                "interval="+interval + "time:" + timeAsString(new Date(timestamp - 1000*60*8)));
             LOG.info("time size:" + timePartition.size());
             timePartition.clear();
 
