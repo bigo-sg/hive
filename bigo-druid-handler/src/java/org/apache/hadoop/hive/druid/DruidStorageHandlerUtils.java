@@ -783,7 +783,7 @@ public final class DruidStorageHandlerUtils {
         rollup =
         tableProperties.getProperty(DruidConstants.DRUID_ROLLUP) != null ?
             Boolean.parseBoolean(tableProperties.getProperty(DruidConstants.DRUID_ROLLUP)) :
-            false;
+            true;
     return new UniformGranularitySpec(Granularity.fromString(segmentGranularity),
         Granularity.fromString(tableProperties.getProperty(DruidConstants.DRUID_QUERY_GRANULARITY) == null ?
             "NONE" :
