@@ -820,7 +820,7 @@ public final class DruidStorageHandlerUtils {
 
   public static FieldTypeEnum getFieldType(String fieldName) {
 
-    if (fieldName == null || fieldName.equals("")) {
+    if (fieldName == null || fieldName.equals("") || !fieldName.contains("_")) {
       return FieldTypeEnum.OTHER;
     }
     String end = fieldName.substring(fieldName.lastIndexOf("_"));
