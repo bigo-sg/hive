@@ -24,8 +24,7 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
-import org.apache.druid.data.input.impl.DimensionSchema;
-import org.apache.druid.data.input.impl.StringDimensionSchema;
+import org.apache.druid.data.input.impl.*;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.JodaUtils;
 import org.apache.druid.java.util.common.MapUtils;
@@ -44,10 +43,7 @@ import org.apache.druid.metadata.MetadataStorageTablesConfig;
 import org.apache.druid.metadata.SQLMetadataConnector;
 import org.apache.druid.metadata.storage.mysql.MySQLConnector;
 import org.apache.druid.query.DruidProcessingConfig;
-import org.apache.druid.query.aggregation.AggregatorFactory;
-import org.apache.druid.query.aggregation.DoubleSumAggregatorFactory;
-import org.apache.druid.query.aggregation.FloatSumAggregatorFactory;
-import org.apache.druid.query.aggregation.LongSumAggregatorFactory;
+import org.apache.druid.query.aggregation.*;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchModule;
@@ -783,7 +779,7 @@ public final class DruidStorageHandlerUtils {
         rollup =
         tableProperties.getProperty(DruidConstants.DRUID_ROLLUP) != null ?
             Boolean.parseBoolean(tableProperties.getProperty(DruidConstants.DRUID_ROLLUP)) :
-            false;
+            true;
     return new UniformGranularitySpec(Granularity.fromString(segmentGranularity),
         Granularity.fromString(tableProperties.getProperty(DruidConstants.DRUID_QUERY_GRANULARITY) == null ?
             "NONE" :
@@ -820,6 +816,31 @@ public final class DruidStorageHandlerUtils {
     return tableProperties.getProperty(key) == null
             ? jc.get(key)
             : tableProperties.getProperty(key);
+  }
+
+  public static FieldTypeEnum getFieldType(String fieldName) {
+
+    if (fieldName == null || fieldName.equals("") || !fieldName.contains("_")) {
+      return FieldTypeEnum.OTHER;
+    }
+    String end = fieldName.substring(fieldName.lastIndexOf("_"));
+    if (end.equals("_hll")) {
+      return FieldTypeEnum.HLL;
+    } else if (end.equals("_theta")) {
+      return FieldTypeEnum.THETA;
+    } else if (end.equals("_sum")) {
+      return FieldTypeEnum.SUM;
+    } else if (end.equals("_dim")) {
+      return FieldTypeEnum.DIM;
+    } else if (end.equals("_cnt")) {
+      return FieldTypeEnum.CNT;
+    } else if (end.equals("_max")) {
+      return FieldTypeEnum.MAX;
+    } else if (end.equals("_min")) {
+      return FieldTypeEnum.MIN;
+    } else {
+      return FieldTypeEnum.OTHER;
+    }
   }
 
   public static Pair<List<DimensionSchema>, AggregatorFactory[]>
@@ -900,6 +921,8 @@ public final class DruidStorageHandlerUtils {
 
     for (int i = 0; i < columnTypes.size(); i++) {
       String dColumnName = columnNames.get(i);
+      FieldTypeEnum fieldTypeEnum = getFieldType(dColumnName);
+
       if (excludedDimensions.contains(dColumnName)) {
         continue;
       }
@@ -910,13 +933,13 @@ public final class DruidStorageHandlerUtils {
       } else if (typeInfo instanceof PrimitiveTypeInfo) {
         LOG.info("column type is: " + typeInfo + ", column name is: " + dColumnName);
         // count distinct algorithm for druid
-        if (hllFields.contains(dColumnName)) {
+        if (fieldTypeEnum == FieldTypeEnum.HLL || hllFields.contains(dColumnName)) {
           LOG.info("column " + dColumnName + " treat as hll metric");
           aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory(dColumnName,
                   dColumnName, lgk,
                   druidHllTgtType));
           continue;
-        } else if (thetaFields.contains(dColumnName)) {
+        } else if (fieldTypeEnum == FieldTypeEnum.THETA || thetaFields.contains(dColumnName)) {
           LOG.info("column " + dColumnName + " treat as sketch metric");
           aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory(dColumnName,
                   dColumnName, size));
@@ -926,22 +949,43 @@ public final class DruidStorageHandlerUtils {
         final PrimitiveObjectInspector.PrimitiveCategory
                 primitiveCategory =
                 ((PrimitiveTypeInfo) typeInfo).getPrimitiveCategory();
-        AggregatorFactory af;
+        AggregatorFactory af = null;
         switch (primitiveCategory) {
           case BYTE:
           case SHORT:
           case INT:
           case LONG:
-            LOG.info("column " + dColumnName + " treat as long metric");
-            af = new LongSumAggregatorFactory(dColumnName, dColumnName);
+            if (fieldTypeEnum == FieldTypeEnum.DIM) {
+              dimensions.add(new LongDimensionSchema(dColumnName));
+            } else if (fieldTypeEnum == FieldTypeEnum.MAX) {
+              af = new LongMaxAggregatorFactory(dColumnName, dColumnName);
+            } else if (fieldTypeEnum == FieldTypeEnum.MIN) {
+              af = new LongMinAggregatorFactory(dColumnName, dColumnName);
+            } else {
+              af = new LongSumAggregatorFactory(dColumnName, dColumnName);
+            }
             break;
           case FLOAT:
-            LOG.info("column " + dColumnName + " treat as float metric");
-            af = new FloatSumAggregatorFactory(dColumnName, dColumnName);
+            if (fieldTypeEnum == FieldTypeEnum.DIM) {
+              dimensions.add(new FloatDimensionSchema(dColumnName));
+            } else if (fieldTypeEnum == FieldTypeEnum.MAX) {
+              af = new FloatMaxAggregatorFactory(dColumnName, dColumnName);
+            } else if (fieldTypeEnum == FieldTypeEnum.MIN) {
+              af = new FloatMinAggregatorFactory(dColumnName, dColumnName);
+            } else {
+              af = new FloatSumAggregatorFactory(dColumnName, dColumnName);
+            }
             break;
           case DOUBLE:
-            LOG.info("column " + dColumnName + " treat as double metric");
-            af = new DoubleSumAggregatorFactory(dColumnName, dColumnName);
+            if (fieldTypeEnum == FieldTypeEnum.DIM) {
+              dimensions.add(new DoubleDimensionSchema(dColumnName));
+            } else if (fieldTypeEnum == FieldTypeEnum.MAX) {
+              af = new DoubleMaxAggregatorFactory(dColumnName, dColumnName);
+            } else if (fieldTypeEnum == FieldTypeEnum.MIN) {
+              af = new DoubleMinAggregatorFactory(dColumnName, dColumnName);
+            } else {
+              af = new DoubleSumAggregatorFactory(dColumnName, dColumnName);
+            }
             break;
           case DECIMAL:
             throw new UnsupportedOperationException(String.format("Druid does not support decimal column type cast column "
