@@ -82,6 +82,7 @@ import org.apache.hadoop.hive.druid.json.AvroParseSpec;
 import org.apache.hadoop.hive.druid.json.AvroStreamInputRowParser;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.hadoop.hive.ql.exec.Utilities;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
@@ -117,6 +118,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -127,6 +129,7 @@ public final class DruidStorageHandlerUtils {
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(DruidStorageHandlerUtils.class);
+  private static final SessionState.LogHelper CONSOLE = new SessionState.LogHelper(LOG);
 
   private static final int NUM_RETRIES = 8;
   private static final int SECONDS_BETWEEN_RETRIES = 2;
@@ -374,6 +377,61 @@ public final class DruidStorageHandlerUtils {
     return true;
   }
 
+  public static List<Interval> getIntervalsToOverWrite(List<DataSegment> segmentsToOverWrite) {
+
+    Map<Long, Long> intenalPoints = new TreeMap<>();
+    List<Interval> intervals = new ArrayList<>();
+
+    for (DataSegment dataSegment: segmentsToOverWrite) {
+      intenalPoints.put(dataSegment.getInterval().getStartMillis(),
+              dataSegment.getInterval().getEndMillis());
+    }
+
+    AtomicReference<Interval> interval = null;
+
+    intenalPoints.forEach((k, v) -> {
+      if (interval.get() == null) {
+        interval.set(new Interval(k, v));
+      }
+      if (!intenalPoints.containsKey(v)) {
+        intervals.add(interval.get());
+        interval.set(null);
+      } else {
+        interval.get().withEndMillis(v);
+      }
+    });
+    return intervals;
+  }
+
+  private static void disableOverLappedSegment(
+          List<DataSegment> segmentsToOverWrite, final Handle handle, String tableName) {
+
+    String dataSource = null;
+    for (DataSegment dataSegment: segmentsToOverWrite) {
+      if (dataSource == null) {
+        dataSource = dataSegment.getDataSource();
+      }
+      if (dataSource != null) {
+        break;
+      }
+    }
+    List<Interval> intervals = getIntervalsToOverWrite(segmentsToOverWrite);
+    String sqlTemplate = String.format(
+            "UPDATE %1$s SET used = 0 WHERE dataSource = :dataSource AND start >= :start AND end <= :end",
+            tableName);
+    CONSOLE.printInfo("disable overlapped segments:" + sqlTemplate);
+    final PreparedBatch batch = handle.prepareBatch(sqlTemplate);
+
+    for (Interval interval: intervals) {
+      batch.add(new ImmutableMap.Builder<String, Object>().put("dataSource", dataSource)
+              .put("start", interval.getStart())
+              .put("end", interval.getEnd())
+              .build());
+      LOG.info("Disabled {}", interval.toInterval());
+    }
+    batch.execute();
+  }
+
   /**
    * First computes the segments timeline to accommodate new segments for insert into case.
    * Then moves segments to druid deep storage with updated metadata/version.
@@ -474,6 +532,9 @@ public final class DruidStorageHandlerUtils {
             publishedSegment.getShardSpec().createChunk(publishedSegment));
 
       }
+
+      // Disabled overlapped segement
+      disableOverLappedSegment(segments, handle, metadataStorageTablesConfig.getSegmentsTable());
 
       // Publish new segments to metadata storage
       final PreparedBatch
