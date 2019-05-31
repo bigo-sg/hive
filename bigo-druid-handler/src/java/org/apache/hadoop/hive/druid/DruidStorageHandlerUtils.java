@@ -397,7 +397,7 @@ public final class DruidStorageHandlerUtils {
         intervals.add(interval.get());
         interval.set(null);
       } else {
-        interval.get().withEndMillis(v);
+        interval.set(interval.get().withEndMillis(v));
       }
     });
     return intervals;
