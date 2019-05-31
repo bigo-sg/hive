@@ -387,7 +387,7 @@ public final class DruidStorageHandlerUtils {
               dataSegment.getInterval().getEndMillis());
     }
 
-    AtomicReference<Interval> interval = null;
+    AtomicReference<Interval> interval = new AtomicReference<>();
 
     intenalPoints.forEach((k, v) -> {
       if (interval.get() == null) {
@@ -403,7 +403,7 @@ public final class DruidStorageHandlerUtils {
     return intervals;
   }
 
-  private static void disableOverLappedSegment(
+  public static void disableOverLappedSegment(
           List<DataSegment> segmentsToOverWrite, final Handle handle, String tableName) {
 
     String dataSource = null;
@@ -419,30 +419,30 @@ public final class DruidStorageHandlerUtils {
     String sqlTemplate = String.format(
             "UPDATE %1$s SET used = 0 WHERE dataSource = :dataSource AND start >= :start AND end <= :end",
             tableName);
-    CONSOLE.printInfo("disable overlapped segments:" + sqlTemplate);
+    LOG.info("disable overlapped segments:" + sqlTemplate);
     final PreparedBatch batch = handle.prepareBatch(sqlTemplate);
 
     for (Interval interval: intervals) {
       batch.add(new ImmutableMap.Builder<String, Object>().put("dataSource", dataSource)
-              .put("start", interval.getStart())
-              .put("end", interval.getEnd())
+              .put("start", interval.getStart().toString())
+              .put("end", interval.getEnd().toString())
               .build());
       LOG.info("Disabled {}", interval.toInterval());
     }
     batch.execute();
   }
 
-  /**
-   * First computes the segments timeline to accommodate new segments for insert into case.
-   * Then moves segments to druid deep storage with updated metadata/version.
-   * ALL IS DONE IN ONE TRANSACTION
-   *
-   * @param connector                   DBI connector to commit
-   * @param metadataStorageTablesConfig Druid metadata tables definitions
-   * @param dataSource                  Druid datasource name
-   * @param segments                    List of segments to move and commit to metadata
-   * @param overwrite                   if it is an insert overwrite
-   * @param conf                        Configuration
+   /**
+   *    * First computes the segments timeline to accommodate new segments for insert into case.
+   *    * Then moves segments to druid deep storage with updated metadata/version.
+   *    * ALL IS DONE IN ONE TRANSACTION
+   *    *
+   *    * @param connector                   DBI connector to commit
+   *    * @param metadataStorageTablesConfig Druid metadata tables definitions
+   *    * @param dataSource                  Druid datasource name
+   *    * @param segments                    List of segments to move and commit to metadata
+   *    * @param overwrite                   if it is an insert overwrite
+   *    * @param conf                       Configuration
    * @param dataSegmentPusher           segment pusher
    * @return List of successfully published Druid segments.
    * This list has the updated versions and metadata about segments after move and timeline sorting
