@@ -98,7 +98,7 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
 
     private final Logger LOG = LoggerFactory.getLogger(SortedDynPartitionTimeGranularityOptimizer.class);
     protected ParseContext parseCtx;
-    private int targetShardsPerGranularity = 0;
+    private int targetShardsPerGranularity = -1;
     private int granularityKeyPos = -1;
     private int partitionKeyPos = -1;
 
@@ -140,11 +140,14 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
                       HiveConf.ConfVars.HIVE_DRUID_INDEXING_GRANULARITY
               );
 
+      if (targetShardsProperty == null) {
+        targetShardsProperty = "-1";
+      }
       final int maxPartitionSize = HiveConf.getIntVar(parseCtx.getConf(),
               HiveConf.ConfVars.HIVE_DRUID_TARGET_SHARDS_PER_GRANULARITY);
       targetShardsPerGranularity = maxPartitionSize > 0? maxPartitionSize:
               Integer.parseInt(targetShardsProperty);
-      targetShardsPerGranularity = targetShardsPerGranularity < 1?1:targetShardsPerGranularity;
+      targetShardsPerGranularity = targetShardsPerGranularity < 1?-1:targetShardsPerGranularity;
 
       LOG.info("Sorted dynamic partitioning on time granularity optimization kicked in...");
 
