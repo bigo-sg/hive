@@ -1081,6 +1081,9 @@ public final class DruidStorageHandlerUtils {
             dimensions.add(new StringDimensionSchema(dColumnName));
             continue;
         }
+        if (af == null) {
+          continue;
+        }
         aggregatorFactoryBuilder.add(af);
       }
     }
