@@ -96,8 +96,10 @@ import org.jboss.netty.handler.codec.http.HttpHeaders;
 import org.jboss.netty.handler.codec.http.HttpMethod;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import org.joda.time.Period;
+import org.joda.time.chrono.GregorianChronology;
 import org.joda.time.chrono.ISOChronology;
 import org.skife.jdbi.v2.*;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
@@ -379,21 +381,21 @@ public final class DruidStorageHandlerUtils {
 
   public static List<Interval> getIntervalsToOverWrite(List<DataSegment> segmentsToOverWrite) {
 
-    Map<Long, Long> intenalPoints = new TreeMap<>();
+    Map<Long, Long> intervalPoints = new TreeMap<>();
     List<Interval> intervals = new ArrayList<>();
 
     for (DataSegment dataSegment: segmentsToOverWrite) {
-      intenalPoints.put(dataSegment.getInterval().getStartMillis(),
+      intervalPoints.put(dataSegment.getInterval().getStartMillis(),
               dataSegment.getInterval().getEndMillis());
     }
 
     AtomicReference<Interval> interval = new AtomicReference<>();
 
-    intenalPoints.forEach((k, v) -> {
+    intervalPoints.forEach((k, v) -> {
       if (interval.get() == null) {
-        interval.set(new Interval(k, v));
+        interval.set(new Interval(k, v).withChronology(GregorianChronology.getInstance(DateTimeZone.UTC)));
       }
-      if (!intenalPoints.containsKey(v)) {
+      if (!intervalPoints.containsKey(v)) {
         intervals.add(interval.get());
         interval.set(null);
       } else {
@@ -417,7 +419,7 @@ public final class DruidStorageHandlerUtils {
     }
     List<Interval> intervals = getIntervalsToOverWrite(segmentsToOverWrite);
     String sqlTemplate = String.format(
-            "UPDATE %1$s SET used = 0 WHERE dataSource = :dataSource AND start >= :start AND end <= :end",
+            "UPDATE %1$s SET used=false WHERE dataSource=:dataSource AND start>=:start AND end<=:end",
             tableName);
     LOG.info("disable overlapped segments:" + sqlTemplate);
     final PreparedBatch batch = handle.prepareBatch(sqlTemplate);
@@ -427,7 +429,8 @@ public final class DruidStorageHandlerUtils {
               .put("start", interval.getStart().toString())
               .put("end", interval.getEnd().toString())
               .build());
-      LOG.info("Disabled {}", interval.toInterval());
+      LOG.info("Disabled {}---->{}::{}----{}", interval.getStart(), interval.getEnd(),
+              interval.getStartMillis(), interval.getEndMillis());
     }
     batch.execute();
   }
@@ -534,7 +537,7 @@ public final class DruidStorageHandlerUtils {
       }
 
       // Disabled overlapped segement
-      disableOverLappedSegment(segments, handle, metadataStorageTablesConfig.getSegmentsTable());
+      disableOverLappedSegment(finalSegmentsToPublish, handle, metadataStorageTablesConfig.getSegmentsTable());
 
       // Publish new segments to metadata storage
       final PreparedBatch
@@ -559,7 +562,10 @@ public final class DruidStorageHandlerUtils {
             .put("payload", JSON_MAPPER.writeValueAsBytes(segment))
             .build());
 
-        LOG.info("Published {}", segment.getId().toString());
+        LOG.info("Published {}:{}---->{}:{}---{}", segment.getId().toString(),
+                segment.getInterval().getStart(), segment.getInterval().getEnd(),
+                segment.getInterval().getStartMillis(),
+                segment.getInterval().getEndMillis());
       }
       batch.execute();
 

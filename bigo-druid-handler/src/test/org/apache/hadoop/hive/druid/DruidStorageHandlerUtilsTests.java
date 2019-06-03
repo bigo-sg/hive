@@ -1,11 +1,15 @@
 package org.apache.hadoop.hive.druid;
 
 import org.apache.druid.timeline.DataSegment;
+import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
+import org.joda.time.chrono.GregorianChronology;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author tangyun@bigo.sg
@@ -39,5 +43,31 @@ public class DruidStorageHandlerUtilsTests {
             System.out.println(interval.getStart().toDateTime());
             System.out.println(interval.getEnd().toDateTime());
         }
+    }
+
+    @Test
+    public void intervalTest() {
+
+        Interval interval = new Interval(System.currentTimeMillis(), System.currentTimeMillis() + 1000000);
+        System.out.println(interval);
+        System.out.println(interval.getStart());
+        System.out.println(interval.getEnd());
+    }
+
+    @Test
+    public void test01() {
+
+        String data = "data";
+        Map<String, String> map = new HashMap<>();
+        System.out.println(map.getClass());
+    }
+
+    @Test
+    public void test02() {
+
+        Interval interval = new Interval(1559034000000L, 1559037600000L);
+        Interval interval1 = interval.withChronology(GregorianChronology.getInstance(DateTimeZone.UTC));
+        System.out.println(interval);
+        System.out.println(interval1);
     }
 }
