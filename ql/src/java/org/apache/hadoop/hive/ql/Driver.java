@@ -1824,9 +1824,11 @@ public class Driver implements CommandProcessor {
         if (this.plan.getOutputs().size() == 1) {
           Iterator<WriteEntity> iter = this.plan.getOutputs().iterator();
           WriteEntity writeEntity = iter.next();
-          if ("org.apache.hadoop.hive.druid.DruidStorageHandler".equals(writeEntity.getTable().getProperty("storage_handler"))) {
-            isInsertingIntoDruid = true;
-            LOG.info("Found a task inserting into druid.");
+          if (writeEntity.getTable() != null) {
+            if ("org.apache.hadoop.hive.druid.DruidStorageHandler".equals(writeEntity.getTable().getProperty("storage_handler"))) {
+              isInsertingIntoDruid = true;
+              LOG.info("Found a task inserting into druid.");
+            }
           }
         }
       }
