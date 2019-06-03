@@ -121,6 +121,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -384,10 +385,9 @@ public final class DruidStorageHandlerUtils {
     Map<Long, Long> intervalPoints = new TreeMap<>();
     List<Interval> intervals = new ArrayList<>();
 
-    for (DataSegment dataSegment: segmentsToOverWrite) {
-      intervalPoints.put(dataSegment.getInterval().getStartMillis(),
-              dataSegment.getInterval().getEndMillis());
-    }
+    segmentsToOverWrite.stream().forEach(dataSegment ->
+            intervalPoints.put(dataSegment.getInterval().getStartMillis(),
+            dataSegment.getInterval().getEndMillis()));
 
     AtomicReference<Interval> interval = new AtomicReference<>();
 
@@ -395,11 +395,10 @@ public final class DruidStorageHandlerUtils {
       if (interval.get() == null) {
         interval.set(new Interval(k, v).withChronology(GregorianChronology.getInstance(DateTimeZone.UTC)));
       }
+      interval.set(interval.get().withEndMillis(v));
       if (!intervalPoints.containsKey(v)) {
         intervals.add(interval.get());
         interval.set(null);
-      } else {
-        interval.set(interval.get().withEndMillis(v));
       }
     });
     return intervals;
