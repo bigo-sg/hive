@@ -1949,16 +1949,16 @@ public class HiveConf extends Configuration {
     HIVE_DRUID_TARGET_SHARDS_PER_GRANULARITY("hive.druid.segment.target.shards.per.granularity", -1,
             "partition num of some time"
     ),
+    HIVE_DRUID_QUANTILES_PARAM_K("hive.druid.quantiles.k", "128",
+            new PatternSet("32768", "16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32", "16", "8", "4", "2"),
+            "Parameter that determines the accuracy and size of the sketch. Higher k means higher accuracy but more space to store sketches. Must be a power of 2 from 2 to 32768. See the Quantiles Accuracy for details."
+    ),
     HIVE_DRUID_SKETCH_THETA_SIZE("hive.druid.sketch.theta.size", "-1",
             new PatternSet("-1", "1048576","524288","262144", "131072", "65536", "32768", "16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32"),
             "https://datasketches.github.io/docs/Theta/ThetaSize.html"
     ),
     HIVE_DRUID_MAX_PARTITION_SIZE("hive.druid.indexer.partition.size.max", 5000000,
             "Maximum number of records per segment partition"
-    ),
-    HIVE_DRUID_QUANTILES_K("hive.druid.quantiles.k", 128,
-            new PatternSet("32768", "16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32", "16", "8", "4", "2"),
-            "Parameter that determines the accuracy and size of the sketch. Higher k means higher accuracy but more space to store sketches. Must be a power of 2 from 2 to 32768. See the Quantiles Accuracy for details."
     ),
     HIVE_DRUID_MAX_SEGMENT_NUM_PER_GRANULARITY("hive.druid.max.segment.num.per.granularity", -1,
             "Maximum number of  segment partition per granularity"
