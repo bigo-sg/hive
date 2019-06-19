@@ -1038,7 +1038,7 @@ public final class DruidStorageHandlerUtils {
               af = new CountAggregatorFactory(dColumnName);
             } else if (fieldTypeEnum == FieldTypeEnum.QUA) {
               DoublesSketchModule.registerSerde();
-//              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
+              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
             } else {
               af = new LongSumAggregatorFactory(dColumnName, dColumnName);
             }
@@ -1054,7 +1054,7 @@ public final class DruidStorageHandlerUtils {
               af = new CountAggregatorFactory(dColumnName);
             } else if (fieldTypeEnum == FieldTypeEnum.QUA) {
               DoublesSketchModule.registerSerde();
-//              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
+              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
             } else {
               af = new FloatSumAggregatorFactory(dColumnName, dColumnName);
             }
@@ -1070,7 +1070,7 @@ public final class DruidStorageHandlerUtils {
               af = new CountAggregatorFactory(dColumnName);
             } else if (fieldTypeEnum == FieldTypeEnum.QUA) {
               DoublesSketchModule.registerSerde();
-//              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
+              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
             } else {
               af = new DoubleSumAggregatorFactory(dColumnName, dColumnName);
             }
