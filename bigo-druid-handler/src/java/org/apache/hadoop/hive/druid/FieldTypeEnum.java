@@ -5,5 +5,5 @@ package org.apache.hadoop.hive.druid;
  * @date 5/29/19 4:10 PM
  */
 public enum FieldTypeEnum {
-    HLL, THETA, SUM, CNT, DIM, MAX, MIN, OTHER
+    HLL, THETA, SUM, CNT, DIM, MAX, MIN, QUA, OTHER
 }
