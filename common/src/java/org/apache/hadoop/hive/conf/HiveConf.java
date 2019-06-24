@@ -1944,6 +1944,9 @@ public class HiveConf extends Configuration {
             new PatternSet("YEAR", "MONTH", "WEEK", "DAY", "HOUR", "MINUTE", "SECOND"),
             "Granularity for the segments created by the Druid storage handler"
     ),
+    HIVE_DRUID_DEPEND_JARS("hive.druid.depend.jars", "/apps/druid/libs/hive/bigo-druid-handler-2.3.2.jar",
+            "dependency of druid handler"
+    ),
     HIVE_DRUID_INDEX_DISTRIBUTE_BY_DIM("hive.druid.index.distribute.by.dim", true,
             "If it is set to true, we distribute the data by hash code of dims"),
     HIVE_DRUID_TARGET_SHARDS_PER_GRANULARITY("hive.druid.segment.target.shards.per.granularity", -1,

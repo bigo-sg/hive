@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
+import com.ibm.icu.impl.IllegalIcuArgumentException;
 import org.apache.druid.data.input.impl.*;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.JodaUtils;
@@ -124,6 +125,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVE_DRUID_DEPEND_JARS;
 
 /**
  * Utils class for Druid storage handler.
@@ -733,6 +736,15 @@ public final class DruidStorageHandlerUtils {
       throws IOException {
     FileSystem localFs = FileSystem.getLocal(conf);
     Set<String> jars = new HashSet<>(conf.getStringCollection("tmpjars"));
+    String depJars = HiveConf.getVar(conf, HIVE_DRUID_DEPEND_JARS);
+    Set<String> newJars = new HashSet<>();
+    String[] theJars = depJars.split(",");
+    for (String jar: theJars) {
+      String[] nodes = jar.split("/");
+      String jar1 = nodes[nodes.length - 1];
+      newJars.add(jar1);
+      jars.add(jar);
+    }
     for (Class<?> clazz : classes) {
       if (clazz == null) {
         continue;
@@ -744,13 +756,19 @@ public final class DruidStorageHandlerUtils {
       if (!localFs.exists(new Path(path))) {
         throw new RuntimeException("Could not validate jar file " + path + " for class " + clazz);
       }
-      jars.add(path);
+      String[] nodes = path.split("/");
+      String jar = nodes[nodes.length - 1];
+      if (!jars.contains(jar)) {
+        LOG.error("need ext jar files {}, make sure to add it as bigo.handler.dependency.jars property", jars);
+        throw new IllegalIcuArgumentException("need path of " + jar + " in property hive.druid.depend.jars");
+      }
+      // jars.add(path);
     }
     if (jars.isEmpty()) {
       return;
     }
     //noinspection ToArrayCallWithZeroLengthArrayArgument
-    conf.set("tmpjars", StringUtils.arrayToString(jars.toArray(new String[jars.size()])));
+//    conf.set("tmpjars", StringUtils.arrayToString(jars.toArray(new String[jars.size()])));
   }
 
   private static VersionedIntervalTimeline<String, DataSegment> getTimelineForIntervalWithHandle(final Handle handle,
