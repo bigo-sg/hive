@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
-import com.ibm.icu.impl.IllegalIcuArgumentException;
 import org.apache.druid.data.input.impl.*;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.JodaUtils;
@@ -760,7 +759,7 @@ public final class DruidStorageHandlerUtils {
       String jar = nodes[nodes.length - 1];
       if (!newJars.contains(jar)) {
         LOG.error("need ext jar files {}, make sure to add it as bigo.handler.dependency.jars property", jars);
-        throw new IllegalIcuArgumentException("need path of " + jar + " in property hive.druid.depend.jars");
+        throw new IOException("need path of " + jar + " in property hive.druid.depend.jars");
       }
     }
     if (jars.isEmpty()) {
