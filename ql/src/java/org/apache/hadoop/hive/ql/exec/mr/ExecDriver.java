@@ -655,8 +655,10 @@ public class ExecDriver extends Task<MapredWork> implements Serializable, Hadoop
         } else if (args[i].equals("-nolog")) {
           noLog = true;
         } else if (args[i].equals("-files")) {
+          LOG.info("--------------------- added file {}", files);
           files = args[++i];
         } else if (args[i].equals("-libjars")) {
+          LOG.info("--------------------- added libjars {}", files);
           libjars = args[++i];
         }else if (args[i].equals("-localtask")) {
           localtask = true;
