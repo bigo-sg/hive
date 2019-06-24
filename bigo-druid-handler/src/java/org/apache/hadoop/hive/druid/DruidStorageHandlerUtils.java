@@ -733,7 +733,7 @@ public final class DruidStorageHandlerUtils {
 
   // Thanks, HBase Storage handler
   @SuppressWarnings("SameParameterValue") static void addDependencyJars(Configuration conf, Class<?>... classes)
-      throws IOException {
+          throws IOException {
     FileSystem localFs = FileSystem.getLocal(conf);
     Set<String> jars = new HashSet<>(conf.getStringCollection("tmpjars"));
     String depJars = HiveConf.getVar(conf, HIVE_DRUID_DEPEND_JARS);
@@ -758,17 +758,16 @@ public final class DruidStorageHandlerUtils {
       }
       String[] nodes = path.split("/");
       String jar = nodes[nodes.length - 1];
-      if (!jars.contains(jar)) {
+      if (!newJars.contains(jar)) {
         LOG.error("need ext jar files {}, make sure to add it as bigo.handler.dependency.jars property", jars);
         throw new IllegalIcuArgumentException("need path of " + jar + " in property hive.druid.depend.jars");
       }
-      // jars.add(path);
     }
     if (jars.isEmpty()) {
       return;
     }
     //noinspection ToArrayCallWithZeroLengthArrayArgument
-//    conf.set("tmpjars", StringUtils.arrayToString(jars.toArray(new String[jars.size()])));
+    conf.set("tmpjars", StringUtils.arrayToString(jars.toArray(new String[jars.size()])));
   }
 
   private static VersionedIntervalTimeline<String, DataSegment> getTimelineForIntervalWithHandle(final Handle handle,
