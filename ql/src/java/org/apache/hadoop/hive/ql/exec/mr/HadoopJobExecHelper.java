@@ -54,6 +54,7 @@ import org.apache.hadoop.mapred.JobStatus;
 import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapred.TaskCompletionEvent;
 import org.apache.hadoop.mapred.TaskReport;
+import org.apache.hadoop.mapreduce.TaskCounter;
 import org.apache.hive.common.util.ShutdownHookManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
@@ -65,6 +66,15 @@ import org.slf4j.LoggerFactory;
 public class HadoopJobExecHelper {
 
   static final private org.slf4j.Logger LOG = LoggerFactory.getLogger(HadoopJobExecHelper.class.getName());
+  private static final String YARN_JOB_INFO="YARN_JOB_INFO";
+  private static final String USER="USER";
+  private static final String QUEUE="QUEUE";
+
+  private int yarnVCores = -1;
+  private int mapVCores = -1;
+  private int reduceVCores = -1;
+  private int appVCores = -1;
+
 
   protected transient JobConf job;
   protected Task<? extends Serializable> task;
@@ -74,6 +84,11 @@ public class HadoopJobExecHelper {
 
   protected transient int lastMapProgress;
   protected transient int lastReduceProgress;
+
+  protected transient String yarnId;
+  protected transient String user;
+  protected transient double maxNeededMem = 0;
+  protected transient int maxNeededVCores = 0;
 
   public transient JobID jobId;
   private final LogHelper console;
@@ -286,9 +301,25 @@ public class HadoopJobExecHelper {
             }
             logReducer = "number of reducers: " + numReduce;
           }
+          if(yarnVCores == -1){
+            yarnVCores = Integer.parseInt(jc.getConf().get("yarn.scheduler.minimum-allocation-vcores"));
+            mapVCores = Integer.parseInt(jc.getConf().get("mapreduce.map.cpu.vcores"));
+            reduceVCores = Integer.parseInt(jc.getConf().get("mapreduce.reduce.cpu.vcores"));
+            appVCores = Integer.parseInt(jc.getConf().get("yarn.app.mapreduce.am.resource.cpu-vcores"));
+          }
+
+          maxNeededVCores = Math.max(appVCores, yarnVCores) + numMap * Math.max(mapVCores, yarnVCores) + numReduce * Math.max(reduceVCores, yarnVCores);
 
           console
-              .printInfo("Hadoop job information for " + getId() + ": " + logMapper + logReducer);
+              .printInfo("Hadoop job information for " + getId() + ": " + logMapper + logReducer );
+
+
+          JobStatus jobStatus = rj.getJobStatus();
+          yarnId = jobStatus.getJobID().toString();
+          user = jobStatus.getUsername();
+          String queue = jobStatus.getQueue();
+          th.getContext().getConf().set(QUEUE, queue);
+
           initOutputPrinted = true;
         }
 
@@ -321,6 +352,7 @@ public class HadoopJobExecHelper {
       errMsg.setLength(0);
 
       updateCounters(ctrs, rj);
+      maxNeededMem = (double)(ctrs.findCounter(TaskCounter.PHYSICAL_MEMORY_BYTES).getCounter())/(1024*1024*1024);
 
       // Prepare data for Client Stat Publishers (if any present) and execute them
       if (clientStatPublishers.size() > 0 && ctrs != null) {
@@ -336,6 +368,7 @@ public class HadoopJobExecHelper {
         }
       }
 
+
       if (mapProgress == lastMapProgress && reduceProgress == lastReduceProgress &&
           System.currentTimeMillis() < reportTime + maxReportInterval) {
         continue;
@@ -345,7 +378,8 @@ public class HadoopJobExecHelper {
 
       report.append(' ').append(getId());
       report.append(" map = ").append(mapProgress).append("%, ");
-      report.append(" reduce = ").append(reduceProgress).append('%');
+      report.append(" reduce = ").append(reduceProgress).append("%");
+
 
       // find out CPU msecs
       // In the case that we can't find out this number, we just skip the step to print
@@ -379,6 +413,14 @@ public class HadoopJobExecHelper {
       task.setStatusMessage(output);
       reportTime = System.currentTimeMillis();
     }
+
+
+    String yarnJobInfo = th.getContext().getConf().get(YARN_JOB_INFO,"");
+    if(!yarnJobInfo.equals("") )
+      yarnJobInfo += ",";
+    yarnJobInfo += yarnId + ":" + numMap + ":" + numReduce + ":" + maxNeededMem + ":" + maxNeededVCores;
+    th.getContext().getConf().set(YARN_JOB_INFO, yarnJobInfo);
+    th.getContext().getConf().set(USER, user);
 
     Counters ctrs = th.getCounters();
 
