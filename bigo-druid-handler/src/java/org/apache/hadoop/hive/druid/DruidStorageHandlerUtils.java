@@ -47,6 +47,8 @@ import org.apache.druid.query.aggregation.*;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.hll.HllSketchModule;
+import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.SketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldApiSketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldSketchBuildAggregatorFactory;
@@ -121,8 +123,9 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVE_DRUID_DEPEND_JARS;
 
 /**
  * Utils class for Druid storage handler.
@@ -729,9 +732,18 @@ public final class DruidStorageHandlerUtils {
 
   // Thanks, HBase Storage handler
   @SuppressWarnings("SameParameterValue") static void addDependencyJars(Configuration conf, Class<?>... classes)
-      throws IOException {
+          throws IOException {
     FileSystem localFs = FileSystem.getLocal(conf);
     Set<String> jars = new HashSet<>(conf.getStringCollection("tmpjars"));
+    String depJars = HiveConf.getVar(conf, HIVE_DRUID_DEPEND_JARS);
+    Set<String> newJars = new HashSet<>();
+    String[] theJars = depJars.split(",");
+    for (String jar: theJars) {
+      String[] nodes = jar.split("/");
+      String jar1 = nodes[nodes.length - 1];
+      newJars.add(jar1);
+      jars.add(jar);
+    }
     for (Class<?> clazz : classes) {
       if (clazz == null) {
         continue;
@@ -743,7 +755,12 @@ public final class DruidStorageHandlerUtils {
       if (!localFs.exists(new Path(path))) {
         throw new RuntimeException("Could not validate jar file " + path + " for class " + clazz);
       }
-      jars.add(path);
+      String[] nodes = path.split("/");
+      String jar = nodes[nodes.length - 1];
+      if (!newJars.contains(jar)) {
+        LOG.error("need ext jar files {}, make sure to add it as bigo.handler.dependency.jars property", jars);
+        throw new IOException("need path of " + jar + " in property hive.druid.depend.jars");
+      }
     }
     if (jars.isEmpty()) {
       return;
@@ -906,6 +923,8 @@ public final class DruidStorageHandlerUtils {
       return FieldTypeEnum.MAX;
     } else if (end.equals("_min")) {
       return FieldTypeEnum.MIN;
+    } else if (end.equals("_qua")) {
+      return FieldTypeEnum.QUA;
     } else {
       return FieldTypeEnum.OTHER;
     }
@@ -955,6 +974,8 @@ public final class DruidStorageHandlerUtils {
         lgk = lgk1;
       }
     }
+
+    int k = Integer.parseInt(HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_QUANTILES_PARAM_K));
 
     String druidHllTgtType = getTableProperty(tableProperties, jc,
             DruidConstants.DRUID_HLL_TGT_TYPE);
@@ -1031,6 +1052,9 @@ public final class DruidStorageHandlerUtils {
               af = new LongMinAggregatorFactory(dColumnName, dColumnName);
             } else if (fieldTypeEnum == FieldTypeEnum.CNT) {
               af = new CountAggregatorFactory(dColumnName);
+            } else if (fieldTypeEnum == FieldTypeEnum.QUA) {
+              DoublesSketchModule.registerSerde();
+              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
             } else {
               af = new LongSumAggregatorFactory(dColumnName, dColumnName);
             }
@@ -1044,6 +1068,9 @@ public final class DruidStorageHandlerUtils {
               af = new FloatMinAggregatorFactory(dColumnName, dColumnName);
             } else if (fieldTypeEnum == FieldTypeEnum.CNT) {
               af = new CountAggregatorFactory(dColumnName);
+            } else if (fieldTypeEnum == FieldTypeEnum.QUA) {
+              DoublesSketchModule.registerSerde();
+              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
             } else {
               af = new FloatSumAggregatorFactory(dColumnName, dColumnName);
             }
@@ -1057,6 +1084,9 @@ public final class DruidStorageHandlerUtils {
               af = new DoubleMinAggregatorFactory(dColumnName, dColumnName);
             } else if (fieldTypeEnum == FieldTypeEnum.CNT) {
               af = new CountAggregatorFactory(dColumnName);
+            } else if (fieldTypeEnum == FieldTypeEnum.QUA) {
+              DoublesSketchModule.registerSerde();
+              af = new DoublesSketchAggregatorFactory(dColumnName, dColumnName, k);
             } else {
               af = new DoubleSumAggregatorFactory(dColumnName, dColumnName);
             }
