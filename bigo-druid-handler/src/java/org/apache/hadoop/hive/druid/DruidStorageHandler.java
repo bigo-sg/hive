@@ -68,6 +68,7 @@ import org.apache.hadoop.hive.ql.security.authorization.HiveAuthorizationProvide
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.common.util.ShutdownHookManager;
 import org.jboss.netty.handler.codec.http.HttpMethod;
@@ -486,6 +487,11 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   @Override public void configureJobConf(TableDesc tableDesc, JobConf jobConf) {
+
+    LOG.info("setting job configuration");
+    jobConf.setBoolean(MRJobConfig.REDUCE_SPECULATIVE, Boolean.FALSE);
+    jobConf.set(HiveConf.ConfVars.HIVESPECULATIVEEXECREDUCERS.toString(), Boolean.FALSE.toString());
+
     if (UserGroupInformation.isSecurityEnabled()) {
       // AM can not do Kerberos Auth so will do the input split generation in the HS2
       LOG.debug("Setting {} to {} to enable split generation on HS2",
