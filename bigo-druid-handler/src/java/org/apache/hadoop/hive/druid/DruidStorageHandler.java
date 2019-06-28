@@ -22,7 +22,6 @@ import com.google.common.base.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.ibm.icu.impl.IllegalIcuArgumentException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.druid.java.util.common.RetryUtils;
 import org.apache.druid.java.util.common.lifecycle.Lifecycle;
@@ -602,7 +601,12 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   private Path getSegmentDescriptorDir() {
-    return new Path(getStagingWorkingDir(), SEGMENTS_DESCRIPTOR_DIR_NAME);
+    String stagingWorkingDir = getConf().get(DruidConstants.DRUID_JOB_WORKING_DIRECTORY);
+    if (stagingWorkingDir == null) {
+      return new Path(getStagingWorkingDir(), SEGMENTS_DESCRIPTOR_DIR_NAME);
+    } else {
+      return new Path(stagingWorkingDir, SEGMENTS_DESCRIPTOR_DIR_NAME);
+    }
   }
 
   private Path getIntermediateSegmentDir() {
