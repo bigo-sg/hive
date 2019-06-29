@@ -103,6 +103,8 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
 
   private static final HttpClient HTTP_CLIENT;
 
+  private static final String DRUID_INDEX_ID = "druid.indexing.id";
+
   private static final List<String> ALLOWED_ALTER_TYPES = ImmutableList.of("ADDPROPS", "DROPPROPS", "ADDCOLS");
 
   static {
@@ -523,9 +525,13 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
 
   private String getUniqueId() {
     if (uniqueId == null) {
-      uniqueId =
-          Preconditions.checkNotNull(Strings.emptyToNull(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVEQUERYID)),
-              "Hive query id is null");
+      uniqueId = getConf().get(DRUID_INDEX_ID);
+      if (uniqueId == null) {
+        uniqueId = Preconditions.checkNotNull(Strings.emptyToNull(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVEQUERYID)),
+          "Hive query id is null");
+      }
+      getConf().set(DRUID_INDEX_ID, uniqueId);
+      LOG.info("get uniqueId {}", uniqueId);
     }
     return uniqueId;
   }
