@@ -795,6 +795,7 @@ public final class DruidStorageHandlerUtils {
 
   public static DataSegmentPusher createSegmentPusherForDirectory(String segmentDirectory, Configuration configuration)
       throws IOException {
+    LOG.info("segmentDirectory {}", segmentDirectory);
     final HdfsDataSegmentPusherConfig hdfsDataSegmentPusherConfig = new HdfsDataSegmentPusherConfig();
     hdfsDataSegmentPusherConfig.setStorageDirectory(segmentDirectory);
     return new HdfsDataSegmentPusher(hdfsDataSegmentPusherConfig, configuration, JSON_MAPPER);
@@ -977,6 +978,7 @@ public final class DruidStorageHandlerUtils {
 
     int k = Integer.parseInt(HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_QUANTILES_PARAM_K));
 
+    LOG.info("hive.druid.quantiles.k {}", k);
     String druidHllTgtType = getTableProperty(tableProperties, jc,
             DruidConstants.DRUID_HLL_TGT_TYPE);
 

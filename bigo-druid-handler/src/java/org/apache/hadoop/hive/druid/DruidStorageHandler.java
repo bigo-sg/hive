@@ -22,7 +22,6 @@ import com.google.common.base.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.ibm.icu.impl.IllegalIcuArgumentException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.druid.java.util.common.RetryUtils;
 import org.apache.druid.java.util.common.lifecycle.Lifecycle;
@@ -68,6 +67,7 @@ import org.apache.hadoop.hive.ql.security.authorization.HiveAuthorizationProvide
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.hive.serde2.AbstractSerDe;
 import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.common.util.ShutdownHookManager;
 import org.jboss.netty.handler.codec.http.HttpMethod;
@@ -102,6 +102,8 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   private static final String INTERMEDIATE_SEGMENT_DIR_NAME = "intermediateSegmentDir";
 
   private static final HttpClient HTTP_CLIENT;
+
+  private static final String DRUID_INDEX_ID = "druid.indexing.id";
 
   private static final List<String> ALLOWED_ALTER_TYPES = ImmutableList.of("ADDPROPS", "DROPPROPS", "ADDCOLS");
 
@@ -454,6 +456,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   private List<DataSegment> fetchSegmentsMetadata(Path segmentDescriptorDir) throws IOException {
+    LOG.info("segmentDescriptorDir {}, segmentDescriptorDir.toString()");
     if (!segmentDescriptorDir.getFileSystem(getConf()).exists(segmentDescriptorDir)) {
       LOG.info("Directory {} does not exist, ignore this if it is create statement or inserts of 0 rows,"
               + " no Druid segments to move, cleaning working directory {}",
@@ -473,6 +476,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   @Override public void configureOutputJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
+    LOG.info("configureOutputJobProperties");
     jobProperties.put(Constants.DRUID_DATA_SOURCE, tableDesc.getTableName());
     jobProperties.put(DruidConstants.DRUID_SEGMENT_VERSION, new DateTime().toString());
     jobProperties.put(DruidConstants.DRUID_JOB_WORKING_DIRECTORY, getStagingWorkingDir().toString());
@@ -486,6 +490,13 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   @Override public void configureJobConf(TableDesc tableDesc, JobConf jobConf) {
+
+    LOG.info("setting job configuration");
+    jobConf.setBoolean(MRJobConfig.REDUCE_SPECULATIVE, Boolean.FALSE);
+    jobConf.set(HiveConf.ConfVars.HIVESPECULATIVEEXECREDUCERS.toString(), Boolean.FALSE.toString());
+    jobConf.set(DruidConstants.DRUID_SEGMENT_INTERMEDIATE_DIRECTORY,
+            getIntermediateSegmentDir().toString());
+
     if (UserGroupInformation.isSecurityEnabled()) {
       // AM can not do Kerberos Auth so will do the input split generation in the HS2
       LOG.debug("Setting {} to {} to enable split generation on HS2",
@@ -514,9 +525,13 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
 
   private String getUniqueId() {
     if (uniqueId == null) {
-      uniqueId =
-          Preconditions.checkNotNull(Strings.emptyToNull(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVEQUERYID)),
-              "Hive query id is null");
+      uniqueId = getConf().get(DRUID_INDEX_ID);
+      if (uniqueId == null) {
+        uniqueId = Preconditions.checkNotNull(Strings.emptyToNull(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVEQUERYID)),
+          "Hive query id is null");
+      }
+      getConf().set(DRUID_INDEX_ID, uniqueId);
+      LOG.info("get uniqueId {}", uniqueId);
     }
     return uniqueId;
   }
@@ -596,11 +611,18 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   private Path getSegmentDescriptorDir() {
-    return new Path(getStagingWorkingDir(), SEGMENTS_DESCRIPTOR_DIR_NAME);
+    String stagingWorkingDir = getConf().get(DruidConstants.DRUID_JOB_WORKING_DIRECTORY);
+    if (stagingWorkingDir == null) {
+      return new Path(getStagingWorkingDir(), SEGMENTS_DESCRIPTOR_DIR_NAME);
+    } else {
+      return new Path(stagingWorkingDir, SEGMENTS_DESCRIPTOR_DIR_NAME);
+    }
   }
 
   private Path getIntermediateSegmentDir() {
-    return new Path(getStagingWorkingDir(), INTERMEDIATE_SEGMENT_DIR_NAME);
+    Path stagingPath = getStagingWorkingDir();
+    LOG.info("getting staging path of {}", stagingPath.toString());
+    return new Path(stagingPath, INTERMEDIATE_SEGMENT_DIR_NAME);
   }
 
   private void cleanWorkingDir() {
