@@ -795,6 +795,7 @@ public final class DruidStorageHandlerUtils {
 
   public static DataSegmentPusher createSegmentPusherForDirectory(String segmentDirectory, Configuration configuration)
       throws IOException {
+    LOG.info("segmentDirectory {}", segmentDirectory);
     final HdfsDataSegmentPusherConfig hdfsDataSegmentPusherConfig = new HdfsDataSegmentPusherConfig();
     hdfsDataSegmentPusherConfig.setStorageDirectory(segmentDirectory);
     return new HdfsDataSegmentPusher(hdfsDataSegmentPusherConfig, configuration, JSON_MAPPER);

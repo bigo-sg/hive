@@ -454,6 +454,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   private List<DataSegment> fetchSegmentsMetadata(Path segmentDescriptorDir) throws IOException {
+    LOG.info("segmentDescriptorDir {}, segmentDescriptorDir.toString()");
     if (!segmentDescriptorDir.getFileSystem(getConf()).exists(segmentDescriptorDir)) {
       LOG.info("Directory {} does not exist, ignore this if it is create statement or inserts of 0 rows,"
               + " no Druid segments to move, cleaning working directory {}",
@@ -473,6 +474,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   @Override public void configureOutputJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
+    LOG.info("configureOutputJobProperties");
     jobProperties.put(Constants.DRUID_DATA_SOURCE, tableDesc.getTableName());
     jobProperties.put(DruidConstants.DRUID_SEGMENT_VERSION, new DateTime().toString());
     jobProperties.put(DruidConstants.DRUID_JOB_WORKING_DIRECTORY, getStagingWorkingDir().toString());
@@ -490,6 +492,8 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
     LOG.info("setting job configuration");
     jobConf.setBoolean(MRJobConfig.REDUCE_SPECULATIVE, Boolean.FALSE);
     jobConf.set(HiveConf.ConfVars.HIVESPECULATIVEEXECREDUCERS.toString(), Boolean.FALSE.toString());
+    jobConf.set(DruidConstants.DRUID_SEGMENT_INTERMEDIATE_DIRECTORY,
+            getIntermediateSegmentDir().toString());
 
     if (UserGroupInformation.isSecurityEnabled()) {
       // AM can not do Kerberos Auth so will do the input split generation in the HS2
@@ -610,7 +614,9 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   }
 
   private Path getIntermediateSegmentDir() {
-    return new Path(getStagingWorkingDir(), INTERMEDIATE_SEGMENT_DIR_NAME);
+    Path stagingPath = getStagingWorkingDir();
+    LOG.info("getting staging path of {}", stagingPath.toString());
+    return new Path(stagingPath, INTERMEDIATE_SEGMENT_DIR_NAME);
   }
 
   private void cleanWorkingDir() {
