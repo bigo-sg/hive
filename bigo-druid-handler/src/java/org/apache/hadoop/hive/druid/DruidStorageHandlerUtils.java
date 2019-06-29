@@ -978,6 +978,7 @@ public final class DruidStorageHandlerUtils {
 
     int k = Integer.parseInt(HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_QUANTILES_PARAM_K));
 
+    LOG.info("hive.druid.quantiles.k {}", k);
     String druidHllTgtType = getTableProperty(tableProperties, jc,
             DruidConstants.DRUID_HLL_TGT_TYPE);
 
