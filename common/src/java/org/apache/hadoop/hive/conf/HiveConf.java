@@ -1952,7 +1952,7 @@ public class HiveConf extends Configuration {
     HIVE_DRUID_TARGET_SHARDS_PER_GRANULARITY("hive.druid.segment.target.shards.per.granularity", -1,
             "partition num of some time"
     ),
-    HIVE_DRUID_QUANTILES_PARAM_K("hive.druid.quantiles.k", "128",
+    HIVE_DRUID_QUANTILES_PARAM_K("hive.druid.quantiles.k", "8192",
             new PatternSet("32768", "16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32", "16", "8", "4", "2"),
             "Parameter that determines the accuracy and size of the sketch. Higher k means higher accuracy but more space to store sketches. Must be a power of 2 from 2 to 32768. See the Quantiles Accuracy for details."
     ),
