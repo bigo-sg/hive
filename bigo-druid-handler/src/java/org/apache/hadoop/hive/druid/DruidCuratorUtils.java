@@ -96,7 +96,7 @@ public class DruidCuratorUtils {
             int port = jsonObject.get("port").getAsInt();
             coordinator = address + ":" + port;
         } catch (Exception e) {
-            log.error("get leader coordinator failed!", e);
+            throw new RuntimeException("get leader coordinator failed!", e);
         } finally {
             curator.close();
         }
