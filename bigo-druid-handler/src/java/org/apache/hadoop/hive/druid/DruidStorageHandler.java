@@ -264,7 +264,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
         DruidCuratorUtils.getCoordinatorAddress(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVE_DRUID_COORDINATOR_DEFAULT_ADDRESS));
     int maxTries = getMaxRetryCount();
 
-    LOG.debug("checking load status from coordinator {}", coordinatorAddress);
+    CONSOLE.printInfo("checking load status from coordinator: ", coordinatorAddress);
 
     String coordinatorResponse;
     try {
