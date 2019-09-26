@@ -52,6 +52,7 @@ public class DruidCuratorUtils {
                         log.error("Error at closing " + curator, ex);
                     }
                 }
+                CACHE.clear();
             }
         }));
     }
@@ -62,7 +63,7 @@ public class DruidCuratorUtils {
             synchronized (DruidCuratorUtils.class) {
                 curator = CACHE.get(config);
                 if (curator == null) {
-                    RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+                    RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 5);
                     curator = CuratorFrameworkFactory.builder()
                             .connectString(config)
                             .sessionTimeoutMs(5000)
@@ -97,8 +98,6 @@ public class DruidCuratorUtils {
             coordinator = address + ":" + port;
         } catch (Exception e) {
             log.error("get leader coordinator failed!", e);
-        } finally {
-            curator.close();
         }
         return coordinator;
     }
