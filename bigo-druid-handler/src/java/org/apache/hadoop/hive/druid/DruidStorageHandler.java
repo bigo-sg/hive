@@ -427,6 +427,11 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
       throw new IllegalArgumentException("insert overwrite is prohibit by druid handler," +
               " because it's a dangerous action");
     }
+
+    final Boolean
+            noDataError =
+            Boolean.valueOf(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVE_DRUID_NO_DATA_ERROR));
+
     try {
       // Check if there segments to load
       final Path segmentDescriptorDir = getSegmentDescriptorDir();
@@ -444,12 +449,17 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
         // rename and commit to metadata
         // Moving Druid segments and committing to druid metadata as one transaction.
         checkLoadStatus(loadAndCommitDruidSegments(table, overwrite, segmentsToLoad));
+      } else if (segmentsToLoad.isEmpty() && noDataError) {
+        // No segments to load
+        throw new SegmentLoadingException("No data insert, please check!");
       }
     } catch (IOException e) {
       throw new MetaException(e.getMessage());
     } catch (CallbackFailedException c) {
       LOG.error("Error while committing transaction to druid metadata storage", c);
       throw new MetaException(c.getCause().getMessage());
+    } catch (SegmentLoadingException e) {
+      throw new MetaException("No data insert, please check!");
     } finally {
       cleanWorkingDir();
     }
