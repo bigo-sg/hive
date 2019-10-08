@@ -261,7 +261,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   private void checkLoadStatus(List<DataSegment> segments) {
     final String
         coordinatorAddress =
-        DruidCuratorUtils.getCoordinatorAddress(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVE_DRUID_COORDINATOR_DEFAULT_ADDRESS));
+        DruidCuratorUtils.getCoordinatorAddress(HiveConf.getVar(getConf(), HiveConf.ConfVars.HIVE_DRUID_ZOOKEEPER_DEFAULT_ADDRESS));
     int maxTries = getMaxRetryCount();
 
     CONSOLE.printInfo("checking load status from coordinator: " + coordinatorAddress);

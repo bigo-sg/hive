@@ -1977,6 +1977,9 @@ public class HiveConf extends Configuration {
     HIVE_DRUID_COORDINATOR_DEFAULT_ADDRESS("hive.druid.coordinator.address.default", "localhost:8081",
             "Address of the Druid coordinator. It is used to check the load status of newly created segments"
     ),
+    HIVE_DRUID_ZOOKEEPER_DEFAULT_ADDRESS("hive.druid.zookeeper.address.default", "localhost:2181",
+            "Address of the Druid zookeeper. It is used to check the load status of newly created segments"
+    ),
     HIVE_DRUID_SEGMENT_INFO_KAFKA_TOPIC("hive.druid.segment.info.kafka.topic", "hive_druid_handler_segment_info",
             "Kafka topic. It is used to send segment info."
     ),
