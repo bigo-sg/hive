@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
+import com.google.gson.JsonObject;
 import org.apache.druid.data.input.impl.*;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.JodaUtils;
@@ -551,6 +552,8 @@ public final class DruidStorageHandlerUtils {
 
           );
 
+      CONSOLE.printInfo(String.format("size of finalSegmentsToPublish: %d", finalSegmentsToPublish.size()));
+      ArrayList<String> segmentsInfo = new ArrayList<>();
       for (final DataSegment segment : finalSegmentsToPublish) {
 
         batch.add(new ImmutableMap.Builder<String, Object>().put("id", segment.getId().toString())
@@ -564,12 +567,34 @@ public final class DruidStorageHandlerUtils {
             .put("payload", JSON_MAPPER.writeValueAsBytes(segment))
             .build());
 
+        JsonObject segmentInfo = new JsonObject();
+        segmentInfo.addProperty("dataSource",segment.getDataSource());
+        segmentInfo.addProperty("created_date",new DateTime().toString());
+        segmentInfo.addProperty("start",segment.getInterval().getStart().toString());
+        segmentInfo.addProperty("end",segment.getInterval().getEnd().toString());
+        segmentInfo.addProperty("partitioned",!(segment.getShardSpec() instanceof NoneShardSpec));
+        segmentInfo.addProperty("version",segment.getVersion());
+        segmentInfo.addProperty("used",true);
+        segmentInfo.addProperty("payload",JSON_MAPPER.writeValueAsBytes(segment).toString());
+        segmentInfo.addProperty("size",segment.getSize());
+        segmentsInfo.add(segmentInfo.toString());
+
         LOG.info("Published {}:{}---->{}:{}---{}", segment.getId().toString(),
                 segment.getInterval().getStart(), segment.getInterval().getEnd(),
                 segment.getInterval().getStartMillis(),
                 segment.getInterval().getEndMillis());
       }
       batch.execute();
+
+      // send segment info to kafka
+      try {
+        final String topic = HiveConf.getVar(conf, HiveConf.ConfVars.HIVE_DRUID_SEGMENT_INFO_KAFKA_TOPIC);
+        final String kafkaBrokerList = HiveConf.getVar(conf, HiveConf.ConfVars.HIVE_DRUID_SEGMENT_INFO_BROKER_LIST);
+        CONSOLE.printInfo(String.format("Send segment info to kafka, kafkaBrokerList: %s, topic: %s", kafkaBrokerList, topic));
+        KafkaUtils.sendMessage(kafkaBrokerList, topic, segmentsInfo);
+      } catch (Exception e) {
+        CONSOLE.printError(String.format("Segment info send to kafka failed, datasource: %s, error info: %s", dataSource, e));
+      }
 
       return finalSegmentsToPublish;
     });
