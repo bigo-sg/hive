@@ -1978,10 +1978,13 @@ public class HiveConf extends Configuration {
             "Address of the Druid coordinator. It is used to check the load status of newly created segments"
     ),
     HIVE_DRUID_SEGMENT_INFO_KAFKA_TOPIC("hive.druid.segment.info.kafka.topic", "hive_druid_handler_segment_info",
-            "Kafka topic. It is used to send segment info"
+            "Kafka topic. It is used to send segment info."
     ),
     HIVE_DRUID_SEGMENT_INFO_BROKER_LIST("hive.druid.segment.info.broker.list", "localhost:9092",
-            "Kafka broker list. It is used to send segment info"
+            "Kafka broker list. It is used to send segment info."
+    ),
+    HIVE_DRUID_NO_DATA_ERROR("hive.druid.no.data.error", false,
+            "If there is no data insert into druid, we will throw an exception."
     ),
     HIVE_DRUID_SELECT_DISTRIBUTE("hive.druid.select.distribute", true,
         "If it is set to true, we distribute the execution of Druid Select queries. Concretely, we retrieve\n" +
