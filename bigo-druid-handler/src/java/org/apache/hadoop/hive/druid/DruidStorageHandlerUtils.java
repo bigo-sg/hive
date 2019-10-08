@@ -554,11 +554,12 @@ public final class DruidStorageHandlerUtils {
 
       CONSOLE.printInfo(String.format("size of finalSegmentsToPublish: %d", finalSegmentsToPublish.size()));
       ArrayList<String> segmentsInfo = new ArrayList<>();
+      String dataTime = new DateTime().toString();
       for (final DataSegment segment : finalSegmentsToPublish) {
 
         batch.add(new ImmutableMap.Builder<String, Object>().put("id", segment.getId().toString())
             .put("dataSource", segment.getDataSource())
-            .put("created_date", new DateTime().toString())
+            .put("created_date", dataTime)
             .put("start", segment.getInterval().getStart().toString())
             .put("end", segment.getInterval().getEnd().toString())
             .put("partitioned", !(segment.getShardSpec() instanceof NoneShardSpec))
@@ -568,15 +569,16 @@ public final class DruidStorageHandlerUtils {
             .build());
 
         JsonObject segmentInfo = new JsonObject();
-        segmentInfo.addProperty("dataSource",segment.getDataSource());
-        segmentInfo.addProperty("created_date",new DateTime().toString());
-        segmentInfo.addProperty("start",segment.getInterval().getStart().toString());
-        segmentInfo.addProperty("end",segment.getInterval().getEnd().toString());
-        segmentInfo.addProperty("partitioned",!(segment.getShardSpec() instanceof NoneShardSpec));
-        segmentInfo.addProperty("version",segment.getVersion());
-        segmentInfo.addProperty("used",true);
-        segmentInfo.addProperty("payload",JSON_MAPPER.writeValueAsBytes(segment).toString());
-        segmentInfo.addProperty("size",segment.getSize());
+        segmentInfo.addProperty("id", segment.getId().toString());
+        segmentInfo.addProperty("dataSource", segment.getDataSource());
+        segmentInfo.addProperty("created_date", dataTime);
+        segmentInfo.addProperty("start", segment.getInterval().getStart().toString());
+        segmentInfo.addProperty("end", segment.getInterval().getEnd().toString());
+        segmentInfo.addProperty("partitioned", !(segment.getShardSpec() instanceof NoneShardSpec));
+        segmentInfo.addProperty("version", segment.getVersion());
+        segmentInfo.addProperty("used", true);
+        segmentInfo.addProperty("payload", JSON_MAPPER.writeValueAsBytes(segment).toString());
+        segmentInfo.addProperty("size", segment.getSize());
         segmentsInfo.add(segmentInfo.toString());
 
         LOG.info("Published {}:{}---->{}:{}---{}", segment.getId().toString(),
