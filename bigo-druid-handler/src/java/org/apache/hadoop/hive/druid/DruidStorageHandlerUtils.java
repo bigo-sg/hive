@@ -555,6 +555,7 @@ public final class DruidStorageHandlerUtils {
       CONSOLE.printInfo(String.format("size of finalSegmentsToPublish: %d", finalSegmentsToPublish.size()));
       ArrayList<String> segmentsInfo = new ArrayList<>();
       String dataTime = new DateTime().toString();
+      long size = 0;
       for (final DataSegment segment : finalSegmentsToPublish) {
 
         batch.add(new ImmutableMap.Builder<String, Object>().put("id", segment.getId().toString())
@@ -568,18 +569,7 @@ public final class DruidStorageHandlerUtils {
             .put("payload", JSON_MAPPER.writeValueAsBytes(segment))
             .build());
 
-        JsonObject segmentInfo = new JsonObject();
-        segmentInfo.addProperty("id", segment.getId().toString());
-        segmentInfo.addProperty("dataSource", segment.getDataSource());
-        segmentInfo.addProperty("created_date", dataTime);
-        segmentInfo.addProperty("start", segment.getInterval().getStart().toString());
-        segmentInfo.addProperty("end", segment.getInterval().getEnd().toString());
-        segmentInfo.addProperty("partitioned", !(segment.getShardSpec() instanceof NoneShardSpec));
-        segmentInfo.addProperty("version", segment.getVersion());
-        segmentInfo.addProperty("used", true);
-        segmentInfo.addProperty("payload", JSON_MAPPER.writeValueAsBytes(segment).toString());
-        segmentInfo.addProperty("size", segment.getSize());
-        segmentsInfo.add(segmentInfo.toString());
+        size += segment.getSize();
 
         LOG.info("Published {}:{}---->{}:{}---{}", segment.getId().toString(),
                 segment.getInterval().getStart(), segment.getInterval().getEnd(),
@@ -590,6 +580,12 @@ public final class DruidStorageHandlerUtils {
 
       // send segment info to kafka
       try {
+        JsonObject segmentInfo = new JsonObject();
+        segmentInfo.addProperty("dataSource", dataSource);
+        segmentInfo.addProperty("created_date", dataTime);
+        segmentInfo.addProperty("size", size);
+        segmentsInfo.add(segmentInfo.toString());
+
         final String topic = HiveConf.getVar(conf, HiveConf.ConfVars.HIVE_DRUID_SEGMENT_INFO_KAFKA_TOPIC);
         final String kafkaBrokerList = HiveConf.getVar(conf, HiveConf.ConfVars.HIVE_DRUID_SEGMENT_INFO_BROKER_LIST);
         CONSOLE.printInfo(String.format("Send segment info to kafka, kafkaBrokerList: %s, topic: %s", kafkaBrokerList, topic));
