@@ -21,10 +21,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.gson.JsonObject;
+import com.yahoo.sketches.hll.HllSketch;
 import org.apache.druid.data.input.impl.*;
 import org.apache.druid.jackson.DefaultObjectMapper;
 import org.apache.druid.java.util.common.JodaUtils;
@@ -45,9 +47,7 @@ import org.apache.druid.metadata.SQLMetadataConnector;
 import org.apache.druid.metadata.storage.mysql.MySQLConnector;
 import org.apache.druid.query.DruidProcessingConfig;
 import org.apache.druid.query.aggregation.*;
-import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
-import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
-import org.apache.druid.query.aggregation.datasketches.hll.HllSketchModule;
+import org.apache.druid.query.aggregation.datasketches.hll.*;
 import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.SketchAggregatorFactory;
@@ -132,7 +132,7 @@ import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVE_DRUID_DEPEND_JA
  * Utils class for Druid storage handler.
  */
 public final class DruidStorageHandlerUtils {
-  private DruidStorageHandlerUtils() {
+  DruidStorageHandlerUtils() {
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(DruidStorageHandlerUtils.class);
@@ -195,9 +195,6 @@ public final class DruidStorageHandlerUtils {
     // set the timezone of the object mapper
     // THIS IS NOT WORKING workaround is to set it as part of java opts -Duser.timezone="UTC"
     JSON_MAPPER.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-    HllSketchModule hllSketchModule = new HllSketchModule();
-    JSON_MAPPER.registerModules(hllSketchModule.getJacksonModules());
 
     Set<Object> registeredModuleIds = JSON_MAPPER.getRegisteredModuleIds();
     for (Object registeredModuleId : registeredModuleIds) {
