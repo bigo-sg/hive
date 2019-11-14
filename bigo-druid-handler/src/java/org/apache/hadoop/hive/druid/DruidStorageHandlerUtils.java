@@ -195,6 +195,16 @@ public final class DruidStorageHandlerUtils {
     // set the timezone of the object mapper
     // THIS IS NOT WORKING workaround is to set it as part of java opts -Duser.timezone="UTC"
     JSON_MAPPER.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    HllSketchModule hllSketchModule = new HllSketchModule();
+    JSON_MAPPER.registerModules(hllSketchModule.getJacksonModules());
+
+    Set<Object> registeredModuleIds = JSON_MAPPER.getRegisteredModuleIds();
+    for (Object registeredModuleId : registeredModuleIds) {
+      CONSOLE.printInfo("registeredModuleId: " + registeredModuleId.toString());
+      LOG.info("registeredModuleId: " + registeredModuleId.toString());
+    }
+
     try {
       // No operation emitter will be used by some internal druid classes.
       EmittingLogger.registerEmitter(new ServiceEmitter("druid-hive-indexer",
