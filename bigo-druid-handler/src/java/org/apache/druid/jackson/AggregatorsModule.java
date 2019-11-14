@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.hive.druid.org.apache.druid.jackson;
+package org.apache.druid.jackson;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

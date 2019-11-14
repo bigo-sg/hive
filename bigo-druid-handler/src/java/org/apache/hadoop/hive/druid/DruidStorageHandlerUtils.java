@@ -201,8 +201,8 @@ public final class DruidStorageHandlerUtils {
 
     Set<Object> registeredModuleIds = JSON_MAPPER.getRegisteredModuleIds();
     for (Object registeredModuleId : registeredModuleIds) {
-      CONSOLE.printInfo("registeredModuleId: " + registeredModuleId.toString());
-      LOG.info("registeredModuleId: " + registeredModuleId.toString());
+      CONSOLE.printInfo("hive registeredModuleId: " + registeredModuleId.toString());
+      LOG.info("hive registeredModuleId: " + registeredModuleId.toString());
     }
 
     try {
