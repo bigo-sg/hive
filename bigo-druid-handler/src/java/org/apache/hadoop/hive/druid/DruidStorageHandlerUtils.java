@@ -213,6 +213,9 @@ public final class DruidStorageHandlerUtils {
     // THIS IS NOT WORKING workaround is to set it as part of java opts -Duser.timezone="UTC"
     JSON_MAPPER.setTimeZone(TimeZone.getTimeZone("UTC"));
 
+    HllSketchModule hllSketchModule = new HllSketchModule();
+    JSON_MAPPER.registerModules(hllSketchModule.getJacksonModules());
+
     try {
       StdSubtypeResolver subtypeResolver = (StdSubtypeResolver) JSON_MAPPER.getSubtypeResolver();
       Field myField = getField(subtypeResolver.getClass(), "_registeredSubtypes");
