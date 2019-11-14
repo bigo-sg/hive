@@ -21,6 +21,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.SubtypeResolver;
+import com.fasterxml.jackson.databind.jsontype.impl.StdSubtypeResolver;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Throwables;
@@ -115,6 +117,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -162,6 +165,20 @@ public final class DruidStorageHandlerUtils {
   public static final ObjectMapper SMILE_MAPPER = new DefaultObjectMapper(new SmileFactory());
   private static final int DEFAULT_MAX_TRIES = 10;
 
+  private static Field getField(Class clazz, String fieldName)
+          throws NoSuchFieldException {
+    try {
+      return clazz.getDeclaredField(fieldName);
+    } catch (NoSuchFieldException e) {
+      Class superClass = clazz.getSuperclass();
+      if (superClass == null) {
+        throw e;
+      } else {
+        return getField(superClass, fieldName);
+      }
+    }
+  }
+
   static {
     // This is needed for serde of PagingSpec as it uses JacksonInject for injecting SelectQueryConfig
     InjectableValues.Std
@@ -196,11 +213,20 @@ public final class DruidStorageHandlerUtils {
     // THIS IS NOT WORKING workaround is to set it as part of java opts -Duser.timezone="UTC"
     JSON_MAPPER.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-    Set<Object> registeredModuleIds = JSON_MAPPER.getRegisteredModuleIds();
-    for (Object registeredModuleId : registeredModuleIds) {
-      CONSOLE.printInfo("hive registeredModuleId: " + registeredModuleId.toString());
-      LOG.info("hive registeredModuleId: " + registeredModuleId.toString());
+    try {
+      StdSubtypeResolver subtypeResolver = (StdSubtypeResolver) JSON_MAPPER.getSubtypeResolver();
+      Field myField = getField(subtypeResolver.getClass(), "_registeredSubtypes");
+      myField.setAccessible(true); //required if field is not normally accessible
+
+      LinkedHashSet<NamedType> registeredSubtypes = (LinkedHashSet<NamedType>) myField.get(subtypeResolver);
+
+      for (NamedType namedType : registeredSubtypes) {
+        LOG.info("pengg, hive, namedType: " + namedType.toString());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+
 
     try {
       // No operation emitter will be used by some internal druid classes.

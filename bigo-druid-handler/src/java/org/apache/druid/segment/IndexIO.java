@@ -24,6 +24,8 @@ package org.apache.druid.segment;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.impl.StdSubtypeResolver;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
@@ -77,6 +79,7 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -587,13 +590,14 @@ public class IndexIO
 
                     // pengg testing code
                     try {
-                        Field myField = getField(mapper.getClass(), "_registeredModuleTypes");
+                        StdSubtypeResolver subtypeResolver = (StdSubtypeResolver) mapper.getSubtypeResolver();
+                        Field myField = getField(subtypeResolver.getClass(), "_registeredSubtypes");
                         myField.setAccessible(true); //required if field is not normally accessible
 
-                        Set<Object> registeredModuleIds = (Set<Object> )myField.get(mapper);
+                        LinkedHashSet<NamedType> registeredSubtypes = (LinkedHashSet<NamedType>) myField.get(subtypeResolver);
 
-                        for (Object registeredModuleId : registeredModuleIds) {
-                            log.info("pengg, reducer, registeredModuleId: " + registeredModuleId.toString());
+                        for (NamedType namedType : registeredSubtypes) {
+                            log.info("pengg, reducer, namedType: " + namedType.toString());
                         }
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
