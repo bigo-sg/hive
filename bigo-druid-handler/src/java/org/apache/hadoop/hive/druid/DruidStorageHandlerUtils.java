@@ -50,8 +50,10 @@ import org.apache.druid.query.aggregation.datasketches.hll.*;
 import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.SketchAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.theta.SketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldApiSketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldSketchBuildAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.tuple.ArrayOfDoublesSketchModule;
 import org.apache.druid.query.expression.*;
 import org.apache.druid.query.scan.ScanQuery;
 import org.apache.druid.query.select.SelectQueryConfig;
@@ -209,23 +211,23 @@ public final class DruidStorageHandlerUtils {
     // THIS IS NOT WORKING workaround is to set it as part of java opts -Duser.timezone="UTC"
     JSON_MAPPER.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-    HllSketchModule hllSketchModule = new HllSketchModule();
-    JSON_MAPPER.registerModules(hllSketchModule.getJacksonModules());
+    // register extensional modules
+    JSON_MAPPER.registerModules(new HllSketchModule().getJacksonModules());
+    JSON_MAPPER.registerModules(new DoublesSketchModule().getJacksonModules());
+    JSON_MAPPER.registerModules(new SketchModule().getJacksonModules());
+    JSON_MAPPER.registerModules(new ArrayOfDoublesSketchModule().getJacksonModules());
 
     try {
       StdSubtypeResolver subtypeResolver = (StdSubtypeResolver) JSON_MAPPER.getSubtypeResolver();
       Field myField = getField(subtypeResolver.getClass(), "_registeredSubtypes");
-      myField.setAccessible(true); //required if field is not normally accessible
-
+      myField.setAccessible(true);
       LinkedHashSet<NamedType> registeredSubtypes = (LinkedHashSet<NamedType>) myField.get(subtypeResolver);
-
       for (NamedType namedType : registeredSubtypes) {
-        LOG.info("pengg, hive, namedType: " + namedType.toString());
+        LOG.info("registered subtypes: " + namedType.toString());
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.warn("fetch registered subtypes failed!", e);
     }
-
 
     try {
       // No operation emitter will be used by some internal druid classes.
