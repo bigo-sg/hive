@@ -13,7 +13,5 @@ public class PengTests {
     public void test() {
         IndexMergerV9 aa = DruidStorageHandlerUtils.INDEX_MERGER_V9;
         System.out.println(aa);
-
-        new DruidStorageHandlerUtils();
     }
 }
