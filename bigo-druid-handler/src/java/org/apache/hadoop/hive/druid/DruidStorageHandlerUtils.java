@@ -133,7 +133,7 @@ import static org.apache.hadoop.hive.conf.HiveConf.ConfVars.HIVE_DRUID_DEPEND_JA
  * Utils class for Druid storage handler.
  */
 public final class DruidStorageHandlerUtils {
-  DruidStorageHandlerUtils() {
+  private DruidStorageHandlerUtils() {
   }
 
   private static final Logger LOG = LoggerFactory.getLogger(DruidStorageHandlerUtils.class);
