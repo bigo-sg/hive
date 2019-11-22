@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.druid.java.util.common.DateTimes;
 import org.apache.druid.java.util.common.RetryUtils;
 import org.apache.druid.java.util.common.lifecycle.Lifecycle;
 import org.apache.druid.java.util.http.client.HttpClient;
@@ -488,7 +489,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
   @Override public void configureOutputJobProperties(TableDesc tableDesc, Map<String, String> jobProperties) {
     LOG.info("configureOutputJobProperties");
     jobProperties.put(Constants.DRUID_DATA_SOURCE, tableDesc.getTableName());
-    jobProperties.put(DruidConstants.DRUID_SEGMENT_VERSION, new DateTime().toString());
+    jobProperties.put(DruidConstants.DRUID_SEGMENT_VERSION, DateTimes.nowUtc().toString());
     jobProperties.put(DruidConstants.DRUID_JOB_WORKING_DIRECTORY, getStagingWorkingDir().toString());
     // DruidOutputFormat will write segments in an intermediate directory
     jobProperties.put(DruidConstants.DRUID_SEGMENT_INTERMEDIATE_DIRECTORY,

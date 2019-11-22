@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.impl.StdSubtypeResolver;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
@@ -45,14 +46,14 @@ import org.apache.druid.metadata.SQLMetadataConnector;
 import org.apache.druid.metadata.storage.mysql.MySQLConnector;
 import org.apache.druid.query.DruidProcessingConfig;
 import org.apache.druid.query.aggregation.*;
-import org.apache.druid.query.aggregation.datasketches.hll.HllSketchAggregatorFactory;
-import org.apache.druid.query.aggregation.datasketches.hll.HllSketchBuildAggregatorFactory;
-import org.apache.druid.query.aggregation.datasketches.hll.HllSketchModule;
+import org.apache.druid.query.aggregation.datasketches.hll.*;
 import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchAggregatorFactory;
 import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.SketchAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.theta.SketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldApiSketchModule;
 import org.apache.druid.query.aggregation.datasketches.theta.oldapi.OldSketchBuildAggregatorFactory;
+import org.apache.druid.query.aggregation.datasketches.tuple.ArrayOfDoublesSketchModule;
 import org.apache.druid.query.expression.*;
 import org.apache.druid.query.scan.ScanQuery;
 import org.apache.druid.query.select.SelectQueryConfig;
@@ -77,7 +78,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-
 import org.apache.hadoop.hive.conf.Constants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
@@ -115,6 +115,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -162,6 +163,20 @@ public final class DruidStorageHandlerUtils {
   public static final ObjectMapper SMILE_MAPPER = new DefaultObjectMapper(new SmileFactory());
   private static final int DEFAULT_MAX_TRIES = 10;
 
+  private static Field getField(Class clazz, String fieldName)
+          throws NoSuchFieldException {
+    try {
+      return clazz.getDeclaredField(fieldName);
+    } catch (NoSuchFieldException e) {
+      Class superClass = clazz.getSuperclass();
+      if (superClass == null) {
+        throw e;
+      } else {
+        return getField(superClass, fieldName);
+      }
+    }
+  }
+
   static {
     // This is needed for serde of PagingSpec as it uses JacksonInject for injecting SelectQueryConfig
     InjectableValues.Std
@@ -195,6 +210,25 @@ public final class DruidStorageHandlerUtils {
     // set the timezone of the object mapper
     // THIS IS NOT WORKING workaround is to set it as part of java opts -Duser.timezone="UTC"
     JSON_MAPPER.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+    // register extensional modules
+    JSON_MAPPER.registerModules(new HllSketchModule().getJacksonModules());
+    JSON_MAPPER.registerModules(new DoublesSketchModule().getJacksonModules());
+    JSON_MAPPER.registerModules(new SketchModule().getJacksonModules());
+    JSON_MAPPER.registerModules(new ArrayOfDoublesSketchModule().getJacksonModules());
+
+    try {
+      StdSubtypeResolver subtypeResolver = (StdSubtypeResolver) JSON_MAPPER.getSubtypeResolver();
+      Field myField = getField(subtypeResolver.getClass(), "_registeredSubtypes");
+      myField.setAccessible(true);
+      LinkedHashSet<NamedType> registeredSubtypes = (LinkedHashSet<NamedType>) myField.get(subtypeResolver);
+      for (NamedType namedType : registeredSubtypes) {
+        LOG.info("registered subtypes: " + namedType.toString());
+      }
+    } catch (Exception e) {
+      LOG.warn("fetch registered subtypes failed!", e);
+    }
+
     try {
       // No operation emitter will be used by some internal druid classes.
       EmittingLogger.registerEmitter(new ServiceEmitter("druid-hive-indexer",
