@@ -78,6 +78,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsAction;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hive.conf.Constants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
@@ -876,6 +878,8 @@ public final class DruidStorageHandlerUtils {
               dataSegmentPusher.makeIndexPathName(dataSegmentBuilder.build(), DruidStorageHandlerUtils.INDEX_ZIP));
       // Create parent if it does not exist, recreation is not an error
       fs.mkdirs(finalPath.getParent());
+      fs.setPermission(finalPath.getParent().getParent(), new FsPermission((short) 777));
+      fs.setPermission(finalPath.getParent().getParent().getParent(), new FsPermission((short) 777));
 
       if (!fs.rename(intermediatePath, finalPath)) {
         if (fs.exists(finalPath)) {
