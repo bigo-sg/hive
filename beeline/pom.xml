@@ -92,6 +92,12 @@
       <artifactId>super-csv</artifactId>
       <version>${super-csv.version}</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/io.prestosql/presto-jdbc -->
+    <dependency>
+      <groupId>io.prestosql</groupId>
+      <artifactId>presto-jdbc</artifactId>
+      <version>317</version>
+    </dependency>
     <!-- test intra-project -->
     <dependency>
       <groupId>org.apache.hive</groupId>
@@ -156,6 +162,8 @@
               </execution>
             </executions>
           </plugin>
+
+
         </plugins>
       </build>
     </profile>
@@ -173,6 +181,28 @@
             <goals>
               <goal>test-jar</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>org.apache.http</pattern>
+                  <shadedPattern>org.apache.shaded.http</shadedPattern>
+                </relocation>
+              </relocations>
+            </configuration>
           </execution>
         </executions>
       </plugin>

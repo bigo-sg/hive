@@ -1533,6 +1533,11 @@ public class Commands {
     if (value != null) {
       props.setProperty(JdbcConnectionParams.AUTH_TYPE, value);
     }
+
+    value = Utils.parsePropertyFromUrl(url, "presto_hive");
+    if (value != null) {
+      props.setProperty("presto_hive", value);
+    }
     return connect(props);
   }
 

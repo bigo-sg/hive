@@ -395,6 +395,13 @@ public class BeeLine implements Closeable {
         .withLongOpt("property-file")
         .withDescription("the file to read configuration properties from")
         .create());
+
+    // -enablehive <username>
+    options.addOption(OptionBuilder
+            .hasArg()
+            .withArgName("enablehive")
+            .withDescription("enablehive")
+            .create('k'));
   }
 
 
@@ -836,6 +843,8 @@ public class BeeLine implements Closeable {
     driver = cl.getOptionValue("d");
     auth = cl.getOptionValue("a");
     user = cl.getOptionValue("n");
+    String enableHive = cl.getOptionValue("k");
+    getOpts().setEnableHive(enableHive);
     getOpts().setAuthType(auth);
     if (cl.hasOption("w")) {
       pass = obtainPasswordFromFile(cl.getOptionValue("w"));

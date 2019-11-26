@@ -37,6 +37,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
+import io.prestosql.jdbc.PrestoConnection;
 import org.apache.hive.jdbc.HiveConnection;
 
 import jline.console.completer.ArgumentCompleter;
@@ -146,6 +147,11 @@ class DatabaseConnection {
     } else {
       beeLine.debug("Use the driver from local added jar file.");
       setConnection(getConnectionFromLocalDriver(getUrl(), info));
+    }
+
+    if (this.connection instanceof PrestoConnection) {
+      PrestoConnection prestoConnection = (PrestoConnection)this.connection;
+      prestoConnection.setSessionProperty("enable_hive_syntax", beeLine.getOpts().getEnableHive());
     }
     setDatabaseMetaData(getConnection().getMetaData());
 
