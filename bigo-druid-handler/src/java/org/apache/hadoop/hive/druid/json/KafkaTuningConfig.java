@@ -164,6 +164,11 @@ public class KafkaTuningConfig implements TuningConfig, AppenderatorConfig {
     return indexSpec;
   }
 
+  @Override
+  public IndexSpec getIndexSpecForIntermediatePersists() {
+    return indexSpec;
+  }
+
   /**
    * Always returns true, doesn't affect the version being built.
    */

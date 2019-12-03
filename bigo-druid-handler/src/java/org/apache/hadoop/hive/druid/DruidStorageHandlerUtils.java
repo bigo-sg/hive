@@ -37,7 +37,7 @@ import org.apache.druid.java.util.emitter.core.NoopEmitter;
 import org.apache.druid.java.util.emitter.service.ServiceEmitter;
 import org.apache.druid.java.util.http.client.HttpClient;
 import org.apache.druid.java.util.http.client.Request;
-import org.apache.druid.java.util.http.client.response.FullResponseHandler;
+import org.apache.druid.java.util.http.client.response.StringFullResponseHandler;
 import org.apache.druid.java.util.http.client.response.FullResponseHolder;
 import org.apache.druid.java.util.http.client.response.InputStreamResponseHandler;
 import org.apache.druid.math.expr.ExprMacroTable;
@@ -45,6 +45,7 @@ import org.apache.druid.metadata.MetadataStorageTablesConfig;
 import org.apache.druid.metadata.SQLMetadataConnector;
 import org.apache.druid.metadata.storage.mysql.MySQLConnector;
 import org.apache.druid.query.DruidProcessingConfig;
+import org.apache.druid.query.Druids;
 import org.apache.druid.query.aggregation.*;
 import org.apache.druid.query.aggregation.datasketches.hll.*;
 import org.apache.druid.query.aggregation.datasketches.quantiles.DoublesSketchAggregatorFactory;
@@ -302,7 +303,7 @@ public final class DruidStorageHandlerUtils {
 
   static FullResponseHolder getResponseFromCurrentLeader(HttpClient client,
       Request request,
-      FullResponseHandler fullResponseHandler) throws ExecutionException, InterruptedException {
+      StringFullResponseHandler fullResponseHandler) throws ExecutionException, InterruptedException {
     FullResponseHolder responseHolder = client.go(request, fullResponseHandler).get();
     if (HttpResponseStatus.TEMPORARY_REDIRECT.equals(responseHolder.getStatus())) {
       String redirectUrlStr = responseHolder.getResponse().headers().get("Location");
@@ -691,12 +692,12 @@ public final class DruidStorageHandlerUtils {
   }
 
   public static String createScanAllQuery(String dataSourceName, List<String> columns) throws JsonProcessingException {
-    final ScanQuery.ScanQueryBuilder scanQueryBuilder = ScanQuery.newScanQueryBuilder();
+    final Druids.ScanQueryBuilder scanQueryBuilder = new Druids.ScanQueryBuilder();
     final List<Interval> intervals = Collections.singletonList(DEFAULT_INTERVAL);
     ScanQuery
         scanQuery =
         scanQueryBuilder.dataSource(dataSourceName)
-            .resultFormat(ScanQuery.RESULT_FORMAT_COMPACTED_LIST)
+            .resultFormat(ScanQuery.ResultFormat.RESULT_FORMAT_COMPACTED_LIST)
             .intervals(new MultipleIntervalSegmentSpec(intervals))
             .columns(columns)
             .build();
@@ -878,8 +879,8 @@ public final class DruidStorageHandlerUtils {
               dataSegmentPusher.makeIndexPathName(dataSegmentBuilder.build(), DruidStorageHandlerUtils.INDEX_ZIP));
       // Create parent if it does not exist, recreation is not an error
       fs.mkdirs(finalPath.getParent());
-      fs.setPermission(finalPath.getParent().getParent(), new FsPermission((short) 777));
-      fs.setPermission(finalPath.getParent().getParent().getParent(), new FsPermission((short) 777));
+      fs.setPermission(finalPath.getParent().getParent(), new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.ALL));
+      fs.setPermission(finalPath.getParent().getParent().getParent(), new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.ALL));
 
       if (!fs.rename(intermediatePath, finalPath)) {
         if (fs.exists(finalPath)) {
@@ -1089,7 +1090,7 @@ public final class DruidStorageHandlerUtils {
           LOG.info("column " + dColumnName + " treat as hll metric");
           aggregatorFactoryBuilder.add(new HllSketchBuildAggregatorFactory(dColumnName,
                   dColumnName, lgk,
-                  druidHllTgtType));
+                  druidHllTgtType, false));
           continue;
         } else if (fieldTypeEnum == FieldTypeEnum.THETA || thetaFields.contains(dColumnName)) {
           LOG.info("column " + dColumnName + " treat as sketch metric");

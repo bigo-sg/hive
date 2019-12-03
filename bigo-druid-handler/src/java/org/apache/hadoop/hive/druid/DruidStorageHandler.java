@@ -30,7 +30,7 @@ import org.apache.druid.java.util.http.client.HttpClient;
 import org.apache.druid.java.util.http.client.HttpClientConfig;
 import org.apache.druid.java.util.http.client.HttpClientInit;
 import org.apache.druid.java.util.http.client.Request;
-import org.apache.druid.java.util.http.client.response.FullResponseHandler;
+import org.apache.druid.java.util.http.client.response.StringFullResponseHandler;
 import org.apache.druid.metadata.MetadataStorageConnectorConfig;
 import org.apache.druid.metadata.MetadataStorageTablesConfig;
 import org.apache.druid.metadata.SQLMetadataConnector;
@@ -40,6 +40,7 @@ import org.apache.druid.metadata.storage.mysql.MySQLConnector;
 import org.apache.druid.metadata.storage.mysql.MySQLConnectorConfig;
 import org.apache.druid.metadata.storage.postgresql.PostgreSQLConnector;
 import org.apache.druid.metadata.storage.postgresql.PostgreSQLConnectorConfig;
+import org.apache.druid.metadata.storage.postgresql.PostgreSQLTablesConfig;
 import org.apache.druid.segment.loading.DataSegmentPusher;
 import org.apache.druid.segment.loading.SegmentLoadingException;
 import org.apache.druid.storage.hdfs.HdfsDataSegmentPusher;
@@ -72,7 +73,6 @@ import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hive.common.util.ShutdownHookManager;
 import org.jboss.netty.handler.codec.http.HttpMethod;
-import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.slf4j.Logger;
@@ -272,7 +272,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
       coordinatorResponse =
           RetryUtils.retry(() -> DruidStorageHandlerUtils.getResponseFromCurrentLeader(getHttpClient(),
               new Request(HttpMethod.GET, new URL(String.format("http://%s/status", coordinatorAddress))),
-              new FullResponseHandler(Charset.forName("UTF-8"))).getContent(),
+              new StringFullResponseHandler(Charset.forName("UTF-8"))).getContent().toString(),
               input -> input instanceof IOException,
               maxTries);
     } catch (Exception e) {
@@ -308,7 +308,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
               result =
               DruidStorageHandlerUtils.getResponseFromCurrentLeader(getHttpClient(),
                   new Request(HttpMethod.GET, input),
-                  new FullResponseHandler(Charset.forName("UTF-8"))).getContent();
+                  new StringFullResponseHandler(Charset.forName("UTF-8"))).getContent().toString();
 
           LOG.debug("Checking segment [{}] response is [{}]", input, result);
           return Strings.isNullOrEmpty(result);
@@ -601,7 +601,7 @@ import static org.apache.hadoop.hive.druid.DruidStorageHandlerUtils.JSON_MAPPER;
       connector =
           new PostgreSQLConnector(storageConnectorConfigSupplier,
               Suppliers.ofInstance(getDruidMetadataStorageTablesConfig()),
-                  new PostgreSQLConnectorConfig()
+                  new PostgreSQLConnectorConfig(), new PostgreSQLTablesConfig()
           );
 
       break;

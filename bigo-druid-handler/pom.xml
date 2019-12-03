@@ -30,7 +30,7 @@
   <properties>
     <hive.path.to.root>..</hive.path.to.root>
     <druid.guava.version>16.0.1</druid.guava.version>
-    <druid.version>0.14.2-incubating</druid.version>
+    <druid.version>0.16.0-incubating</druid.version>
     <hadoop.version>2.7.2</hadoop.version>
   </properties>
 
