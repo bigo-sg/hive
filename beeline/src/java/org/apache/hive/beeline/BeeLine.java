@@ -843,8 +843,12 @@ public class BeeLine implements Closeable {
     driver = cl.getOptionValue("d");
     auth = cl.getOptionValue("a");
     user = cl.getOptionValue("n");
+
     String enableHive = cl.getOptionValue("k");
-    getOpts().setEnableHive(enableHive);
+    if (enableHive != null && (enableHive.toLowerCase().equals("true") || enableHive.toLowerCase().equals("false"))) {
+      getOpts().setEnableHive(enableHive);
+    }
+
     getOpts().setAuthType(auth);
     if (cl.hasOption("w")) {
       pass = obtainPasswordFromFile(cl.getOptionValue("w"));

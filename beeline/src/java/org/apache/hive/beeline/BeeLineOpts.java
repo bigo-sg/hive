@@ -105,8 +105,8 @@ class BeeLineOpts implements Completer {
 
   private String scriptFile = null;
   private String[] initFiles = null;
-  private String authType = "true";
-  private String enableHive = null; //add for presto cli
+  private String authType = null;
+  private String enableHive = "true"; //add for presto cli
   private char delimiterForDSV = DEFAULT_DELIMITER_FOR_DSV;
 
   private Map<String, String> hiveVariables = new HashMap<String, String>();
