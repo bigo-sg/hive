@@ -165,6 +165,8 @@ public class BeeLine implements Closeable {
   private static final String PROP_FILE_PREFIX = "--property-file";
   static final String PASSWD_MASK = "[passwd stripped]";
 
+  private static int ERROR_CODE = 0;
+
   private final Map<Object, Object> formats = map(new Object[] {
       "vertical", new VerticalOutputFormat(this),
       "table", new TableOutputFormat(this),
@@ -1189,7 +1191,7 @@ public class BeeLine implements Closeable {
         }
 
         if (!dispatch(line)) {
-          lastExecutionResult = ERRNO_OTHER;
+          lastExecutionResult = ERROR_CODE;
           if (exitOnError) break;
         } else if (line != null) {
           lastExecutionResult = ERRNO_OK;
@@ -1428,7 +1430,6 @@ public class BeeLine implements Closeable {
     output(getColorBuffer().red(msg), true, getErrorStream());
     return false;
   }
-
 
   boolean error(Throwable t) {
     handleException(t);
@@ -1966,6 +1967,9 @@ public class BeeLine implements Closeable {
     if (getOpts().getVerbose()) {
       e.printStackTrace(getErrorStream());
     }
+
+    ERROR_CODE = e.getErrorCode();
+    System.out.println("SQLException, error code: " + ERROR_CODE + ", error message: " + e.getMessage());
 
     if (!getOpts().getShowNestedErrs()) {
       return;

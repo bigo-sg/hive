@@ -96,7 +96,7 @@
     <dependency>
       <groupId>io.prestosql</groupId>
       <artifactId>presto-jdbc</artifactId>
-      <version>317</version>
+      <version>324</version>
     </dependency>
     <!-- test intra-project -->
     <dependency>
