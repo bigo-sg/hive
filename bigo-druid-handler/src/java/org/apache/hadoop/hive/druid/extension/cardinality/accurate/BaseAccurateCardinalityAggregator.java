@@ -17,14 +17,14 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.apache.druid.query.aggregation.Aggregator;
 import org.apache.druid.query.aggregation.BufferAggregator;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollectorFactory;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollectorFactory;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;

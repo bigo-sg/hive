@@ -17,29 +17,17 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate.bitmap64;
 
+import java.nio.ByteBuffer;
 
-import org.apache.druid.segment.BaseLongColumnValueSelector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollectorFactory;
-
-public class LongAccurateCardinalityAggregator extends BaseAccurateCardinalityAggregator<BaseLongColumnValueSelector>
+public interface LongBitmapFactory
 {
-  public LongAccurateCardinalityAggregator(
-      BaseLongColumnValueSelector selector,
-      LongBitmapCollectorFactory longBitmapCollectorFactory,
-      boolean onHeap
-  )
-  {
-    super(selector, longBitmapCollectorFactory, onHeap);
-  }
+  LongMutableBitmap makeEmptyMutableBitmap();
 
-  @Override
-  void collectorAdd(LongBitmapCollector longBitmapCollector)
-  {
-    longBitmapCollector.add(selector.getLong());
-  }
+  LongImmutableBitmap makeEmptyImmutableBitmap();
+
+  LongImmutableBitmap makeImmutableBitmap(LongMutableBitmap mutableBitmap);
+
+  LongMutableBitmap mapMutableBitmap(ByteBuffer b);
 }
-
-

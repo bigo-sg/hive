@@ -17,17 +17,18 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate;
 
 
-import org.apache.druid.segment.BaseObjectColumnValueSelector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollectorFactory;
+import org.apache.druid.java.util.common.IAE;
+import org.apache.druid.segment.ColumnValueSelector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollectorFactory;
 
-public class BitmapAggregator extends BaseAccurateCardinalityAggregator<BaseObjectColumnValueSelector>
+public class ObjectAccurateCardinalityAggregator extends BaseAccurateCardinalityAggregator<ColumnValueSelector>
 {
-  public BitmapAggregator(
-      BaseObjectColumnValueSelector selector,
+  public ObjectAccurateCardinalityAggregator(
+      ColumnValueSelector selector,
       LongBitmapCollectorFactory longBitmapCollectorFactory,
       boolean onHeap
   )
@@ -38,10 +39,18 @@ public class BitmapAggregator extends BaseAccurateCardinalityAggregator<BaseObje
   @Override
   void collectorAdd(LongBitmapCollector longBitmapCollector)
   {
-    Object object = selector.getObject();
+    final Object object = selector.getObject();
     if (object == null) {
       return;
     }
-    longBitmapCollector.fold((LongBitmapCollector) object);
+    if (object instanceof LongBitmapCollector) {
+      longBitmapCollector.fold((LongBitmapCollector) object);
+    } else if (object instanceof Long) {
+      longBitmapCollector.add(selector.getLong());
+    } else {
+      throw new IAE(
+          "Cannot aggregat accurate cardinality for invalid column type"
+      );
+    }
   }
 }

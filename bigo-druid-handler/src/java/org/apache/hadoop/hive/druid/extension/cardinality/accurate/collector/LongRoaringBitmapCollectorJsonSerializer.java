@@ -17,20 +17,20 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate.collector;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = LongRoaringBitmapCollectorFactory.class)
-@JsonSubTypes(value = {
-    @JsonSubTypes.Type(name = "roaring", value = LongRoaringBitmapCollectorFactory.class)
-})
-public interface LongBitmapCollectorFactory
+public class LongRoaringBitmapCollectorJsonSerializer extends JsonSerializer<LongRoaringBitmapCollector>
 {
-  LongBitmapCollector makeEmptyCollector();
-
-  LongBitmapCollector makeCollector(ByteBuffer buffer);
+  @Override
+  public void serialize(LongRoaringBitmapCollector collector, JsonGenerator jgen, SerializerProvider provider)
+      throws IOException
+  {
+    jgen.writeBinary(collector.toByteBuffer().array());
+  }
 }

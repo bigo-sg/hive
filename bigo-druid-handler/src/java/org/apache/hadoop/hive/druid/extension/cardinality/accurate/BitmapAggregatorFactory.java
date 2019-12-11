@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -33,10 +33,10 @@ import org.apache.druid.segment.ColumnValueSelector;
 import org.apache.druid.segment.NilColumnValueSelector;
 import org.apache.druid.segment.column.ColumnCapabilities;
 import org.apache.druid.segment.column.ValueType;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollectorFactory;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongRoaringBitmapCollector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongRoaringBitmapCollectorFactory;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollectorFactory;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongRoaringBitmapCollector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongRoaringBitmapCollectorFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -211,7 +211,7 @@ public class BitmapAggregatorFactory extends AggregatorFactory
   public byte[] getCacheKey()
   {
 //    return new CacheKeyBuilder(AggregatorUtil.BITMAP_AGG_CACHE_TYPE_ID)
-    return new CacheKeyBuilder((byte) 0x1C)
+    return new CacheKeyBuilder((byte) 0x42)
         .appendCacheable(field)
         .build();
   }

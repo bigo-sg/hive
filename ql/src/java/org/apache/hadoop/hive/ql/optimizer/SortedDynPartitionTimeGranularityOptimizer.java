@@ -326,7 +326,7 @@ public class SortedDynPartitionTimeGranularityOptimizer extends Transform {
             continue;
           }
           if (atlas.endsWith("_dim") || (typeName.equals("string") && !atlas.endsWith("_hll") &&
-                  !atlas.endsWith("_theta") && !atlas.endsWith("_cnt"))) {
+                  !atlas.endsWith("_theta") && !atlas.endsWith("_cnt") && !atlas.endsWith("_acc"))) {
             LOG.info("treat as dim {}", atlas);
             dimColumns.add(new ExprNodeColumnDesc(columnInfo));
           }

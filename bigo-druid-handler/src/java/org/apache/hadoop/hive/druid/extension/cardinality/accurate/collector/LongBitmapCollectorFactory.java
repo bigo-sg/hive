@@ -17,17 +17,20 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate.bitmap64;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector;
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.nio.ByteBuffer;
 
-public interface LongBitmapFactory
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = LongRoaringBitmapCollectorFactory.class)
+@JsonSubTypes(value = {
+    @JsonSubTypes.Type(name = "roaring", value = LongRoaringBitmapCollectorFactory.class)
+})
+public interface LongBitmapCollectorFactory
 {
-  LongMutableBitmap makeEmptyMutableBitmap();
+  LongBitmapCollector makeEmptyCollector();
 
-  LongImmutableBitmap makeEmptyImmutableBitmap();
-
-  LongImmutableBitmap makeImmutableBitmap(LongMutableBitmap mutableBitmap);
-
-  LongMutableBitmap mapMutableBitmap(ByteBuffer b);
+  LongBitmapCollector makeCollector(ByteBuffer buffer);
 }

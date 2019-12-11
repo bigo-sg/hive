@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -27,10 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.druid.java.util.common.IAE;
 import org.apache.druid.java.util.common.StringUtils;
-import org.apache.druid.query.aggregation.Aggregator;
-import org.apache.druid.query.aggregation.AggregatorFactory;
-import org.apache.druid.query.aggregation.AggregatorUtil;
-import org.apache.druid.query.aggregation.BufferAggregator;
+import org.apache.druid.query.aggregation.*;
 import org.apache.druid.query.dimension.DefaultDimensionSpec;
 import org.apache.druid.query.dimension.DimensionSpec;
 import org.apache.druid.segment.ColumnSelectorFactory;
@@ -38,9 +35,9 @@ import org.apache.druid.segment.ColumnValueSelector;
 import org.apache.druid.segment.NilColumnValueSelector;
 import org.apache.druid.segment.column.ColumnCapabilities;
 import org.apache.druid.segment.column.ValueType;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollector;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongBitmapCollectorFactory;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.LongRoaringBitmapCollectorFactory;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollectorFactory;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongRoaringBitmapCollectorFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Comparator;
@@ -188,6 +185,12 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
   }
 
   @Override
+  public AggregateCombiner makeAggregateCombiner()
+  {
+    return new BitmapAggregatorCombiner(longBitmapCollectorFactory);
+  }
+
+  @Override
   public List<AggregatorFactory> getRequiredColumns()
   {
     return Lists.transform(
@@ -264,8 +267,7 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
   {
     byte[] dimSpecKey = field.getCacheKey();
     ByteBuffer retBuf = ByteBuffer.allocate(2 + dimSpecKey.length);
-//    retBuf.put(AggregatorUtil.ACCURATE_CARDINALITY_CACHE_TYPE_ID);
-    retBuf.put((byte) 0x1B);
+    retBuf.put((byte) 0x41);
     retBuf.put(dimSpecKey);
 
     return retBuf.array();

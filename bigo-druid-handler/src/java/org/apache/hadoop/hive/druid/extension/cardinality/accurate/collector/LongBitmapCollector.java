@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate.collector;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector;
 
 import java.nio.ByteBuffer;
 

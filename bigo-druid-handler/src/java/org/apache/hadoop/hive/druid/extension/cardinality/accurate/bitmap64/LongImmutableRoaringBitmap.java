@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate.bitmap64;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate.bitmap64;
 
 import com.google.common.base.Throwables;
 import org.roaringbitmap.BitmapDataProviderSupplier;

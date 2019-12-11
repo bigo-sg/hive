@@ -84,6 +84,8 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hive.conf.Constants;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.druid.conf.DruidConstants;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.AccurateCardinalityAggregatorFactory;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.AccurateCardinalityModule;
 import org.apache.hadoop.hive.druid.json.AvroParseSpec;
 import org.apache.hadoop.hive.druid.json.AvroStreamInputRowParser;
 import org.apache.hadoop.hive.metastore.api.Table;
@@ -219,6 +221,7 @@ public final class DruidStorageHandlerUtils {
     JSON_MAPPER.registerModules(new DoublesSketchModule().getJacksonModules());
     JSON_MAPPER.registerModules(new SketchModule().getJacksonModules());
     JSON_MAPPER.registerModules(new ArrayOfDoublesSketchModule().getJacksonModules());
+    JSON_MAPPER.registerModules(new AccurateCardinalityModule().getJacksonModules());
 
     try {
       StdSubtypeResolver subtypeResolver = (StdSubtypeResolver) JSON_MAPPER.getSubtypeResolver();
@@ -988,6 +991,8 @@ public final class DruidStorageHandlerUtils {
       return FieldTypeEnum.MIN;
     } else if (end.equals("_qua")) {
       return FieldTypeEnum.QUA;
+    } else if (end.equals("_acc")) {
+      return FieldTypeEnum.ACC;
     } else {
       return FieldTypeEnum.OTHER;
     }
@@ -1070,6 +1075,7 @@ public final class DruidStorageHandlerUtils {
     final List<DimensionSchema> dimensions = new ArrayList<>();
     HllSketchModule.registerSerde();
     new OldApiSketchModule().configure(null);
+    new AccurateCardinalityModule().configure(null);
     ImmutableList.Builder<AggregatorFactory> aggregatorFactoryBuilder = ImmutableList.builder();
 
     for (int i = 0; i < columnTypes.size(); i++) {
@@ -1096,6 +1102,11 @@ public final class DruidStorageHandlerUtils {
           LOG.info("column " + dColumnName + " treat as sketch metric");
           aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory(dColumnName,
                   dColumnName, size));
+          continue;
+        } else if (fieldTypeEnum == FieldTypeEnum.ACC) {
+          LOG.info("column " + dColumnName + " treat as acc metric");
+          aggregatorFactoryBuilder.add(new AccurateCardinalityAggregatorFactory(dColumnName,
+                  dColumnName));
           continue;
         }
 

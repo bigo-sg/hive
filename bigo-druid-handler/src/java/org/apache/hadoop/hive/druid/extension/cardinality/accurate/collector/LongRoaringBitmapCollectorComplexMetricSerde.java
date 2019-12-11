@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate.collector;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector;
 
 import com.google.common.collect.Ordering;
 import org.apache.druid.data.input.InputRow;
@@ -27,7 +27,7 @@ import org.apache.druid.segment.data.ObjectStrategy;
 import org.apache.druid.segment.serde.ComplexColumnPartSupplier;
 import org.apache.druid.segment.serde.ComplexMetricExtractor;
 import org.apache.druid.segment.serde.ComplexMetricSerde;
-import org.apache.hadoop.hive.druid.extension.accurate.AccurateCardinalityModule;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.AccurateCardinalityModule;
 
 import java.nio.ByteBuffer;
 

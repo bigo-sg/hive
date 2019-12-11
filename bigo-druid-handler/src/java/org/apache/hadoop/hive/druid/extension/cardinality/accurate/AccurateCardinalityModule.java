@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate;
 
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
@@ -26,7 +26,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import org.apache.druid.initialization.DruidModule;
 import org.apache.druid.segment.serde.ComplexMetrics;
-import org.apache.hadoop.hive.druid.extension.accurate.collector.*;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.*;
 
 import java.util.List;
 

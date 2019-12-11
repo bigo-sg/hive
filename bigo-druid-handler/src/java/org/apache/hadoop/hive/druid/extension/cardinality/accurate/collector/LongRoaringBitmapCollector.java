@@ -17,12 +17,12 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate.collector;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector;
 
 
 import org.apache.druid.java.util.common.StringUtils;
-import org.apache.hadoop.hive.druid.extension.accurate.bitmap64.LongMutableBitmap;
-import org.apache.hadoop.hive.druid.extension.accurate.bitmap64.LongRoaringBitmap;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.bitmap64.LongRoaringBitmap;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.bitmap64.LongMutableBitmap;
 
 import java.nio.ByteBuffer;
 

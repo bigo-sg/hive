@@ -17,20 +17,29 @@
  * under the License.
  */
 
-package org.apache.hadoop.hive.druid.extension.accurate.collector;
+package org.apache.hadoop.hive.druid.extension.cardinality.accurate;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 
-import java.io.IOException;
+import org.apache.druid.segment.BaseLongColumnValueSelector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollector;
+import org.apache.hadoop.hive.druid.extension.cardinality.accurate.collector.LongBitmapCollectorFactory;
 
-public class LongRoaringBitmapCollectorJsonSerializer extends JsonSerializer<LongRoaringBitmapCollector>
+public class LongAccurateCardinalityAggregator extends BaseAccurateCardinalityAggregator<BaseLongColumnValueSelector>
 {
-  @Override
-  public void serialize(LongRoaringBitmapCollector collector, JsonGenerator jgen, SerializerProvider provider)
-      throws IOException
+  public LongAccurateCardinalityAggregator(
+      BaseLongColumnValueSelector selector,
+      LongBitmapCollectorFactory longBitmapCollectorFactory,
+      boolean onHeap
+  )
   {
-    jgen.writeBinary(collector.toByteBuffer().array());
+    super(selector, longBitmapCollectorFactory, onHeap);
+  }
+
+  @Override
+  void collectorAdd(LongBitmapCollector longBitmapCollector)
+  {
+    longBitmapCollector.add(selector.getLong());
   }
 }
+
+
