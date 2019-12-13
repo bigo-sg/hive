@@ -1038,6 +1038,8 @@ public final class DruidStorageHandlerUtils {
     }
 
     int k = Integer.parseInt(HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_QUANTILES_PARAM_K));
+    String nameSpace = HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_ACCRUATE_CARDINALITY_NAMESPACE);
+    String openOneId = HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_ACCRUATE_CARDINALITY_OPEN_ONEID);
 
     LOG.info("hive.druid.quantiles.k {}", k);
     String druidHllTgtType = getTableProperty(tableProperties, jc,
@@ -1095,6 +1097,11 @@ public final class DruidStorageHandlerUtils {
           LOG.info("column " + dColumnName + " treat as sketch metric");
           aggregatorFactoryBuilder.add(new OldSketchBuildAggregatorFactory(dColumnName,
                   dColumnName, size));
+          continue;
+        } else if (fieldTypeEnum == FieldTypeEnum.ACC) {
+          LOG.info("column " + dColumnName + " treat as acc metric");
+          aggregatorFactoryBuilder.add(new AccurateCardinalityAggregatorFactory(dColumnName,
+                  dColumnName, nameSpace, openOneId));
           continue;
         }
 
