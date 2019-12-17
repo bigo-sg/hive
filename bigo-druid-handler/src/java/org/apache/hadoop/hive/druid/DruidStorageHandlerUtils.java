@@ -1044,8 +1044,15 @@ public final class DruidStorageHandlerUtils {
     }
 
     int k = Integer.parseInt(HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_QUANTILES_PARAM_K));
+    String nameSpace = HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_ACCRUATE_CARDINALITY_NAMESPACE);
+    String openOneId = HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_ACCRUATE_CARDINALITY_OPEN_ONEID);
+    String oneIdUrl = HiveConf.getVar(jc, HiveConf.ConfVars.HIVE_DRUID_ACCRUATE_CARDINALITY_ONEID_URL);
 
     LOG.info("hive.druid.quantiles.k {}", k);
+    LOG.info("hive.druid.accurate.cardinality.namespace {}", nameSpace);
+    LOG.info("hive.druid.accurate.cardinality.open.oneid {}", openOneId);
+    LOG.info("hive.druid.accurate.cardinality.oneid.url {}", oneIdUrl);
+
     String druidHllTgtType = getTableProperty(tableProperties, jc,
             DruidConstants.DRUID_HLL_TGT_TYPE);
 
@@ -1106,7 +1113,7 @@ public final class DruidStorageHandlerUtils {
         } else if (fieldTypeEnum == FieldTypeEnum.ACC) {
           LOG.info("column " + dColumnName + " treat as acc metric");
           aggregatorFactoryBuilder.add(new AccurateCardinalityAggregatorFactory(dColumnName,
-                  dColumnName));
+                  dColumnName, nameSpace, openOneId, oneIdUrl));
           continue;
         }
 

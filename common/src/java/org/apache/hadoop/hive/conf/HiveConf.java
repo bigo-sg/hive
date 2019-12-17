@@ -1960,6 +1960,15 @@ public class HiveConf extends Configuration {
             new PatternSet("-1", "1048576","524288","262144", "131072", "65536", "32768", "16384", "8192", "4096", "2048", "1024", "512", "256", "128", "64", "32"),
             "https://datasketches.github.io/docs/Theta/ThetaSize.html"
     ),
+    HIVE_DRUID_ACCRUATE_CARDINALITY_NAMESPACE("hive.druid.accurate.cardinality.namespace", "hdid",
+            "the namespace for oneId service in Druid, Only using and working when hive.druid.accurate.cardinality.open.oneid set to true"
+    ),
+    HIVE_DRUID_ACCRUATE_CARDINALITY_OPEN_ONEID("hive.druid.accurate.cardinality.open.oneid", "false",
+            "If open oneId service in Druid when using hive2Druid"
+    ),
+    HIVE_DRUID_ACCRUATE_CARDINALITY_ONEID_URL("hive.druid.accurate.cardinality.oneid.url", "http://oneid.bigo.sg:8013/info_id",
+            "the url of oneId service, Only using and working when hive.druid.accurate.cardinality.open.oneid set to true"
+    ),
     HIVE_DRUID_MAX_PARTITION_SIZE("hive.druid.indexer.partition.size.max", 5000000,
             "Maximum number of records per segment partition"
     ),
