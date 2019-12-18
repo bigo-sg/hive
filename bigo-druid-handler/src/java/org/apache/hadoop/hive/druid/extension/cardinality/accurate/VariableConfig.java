@@ -9,6 +9,8 @@ public class VariableConfig {
   public static String nameSpace;
   public static String openOneId;
   public static String oneIdUrl;
+  public static final byte accurateCardinalityCacheTypeId = 0x41;
+  public static final byte bitmapAggCacheTypeId = 0x42;
 
   public static void setNameSpace(String name)
   {

@@ -300,7 +300,7 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
   {
     byte[] dimSpecKey = field.getCacheKey();
     ByteBuffer retBuf = ByteBuffer.allocate(2 + dimSpecKey.length);
-    retBuf.put((byte) 0x41);
+    retBuf.put(VariableConfig.accurateCardinalityCacheTypeId);
     retBuf.put(dimSpecKey);
 
     return retBuf.array();

@@ -210,7 +210,7 @@ public class BitmapAggregatorFactory extends AggregatorFactory
   @Override
   public byte[] getCacheKey()
   {
-    return new CacheKeyBuilder((byte) 0x42)
+    return new CacheKeyBuilder(VariableConfig.bitmapAggCacheTypeId)
         .appendCacheable(field)
         .build();
   }
