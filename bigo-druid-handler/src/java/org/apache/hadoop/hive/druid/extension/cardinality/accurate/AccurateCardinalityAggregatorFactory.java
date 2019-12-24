@@ -104,6 +104,14 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
   }
 
   public AccurateCardinalityAggregatorFactory(
+          String name,
+          String field
+  )
+  {
+    this(name, field, "", null, null,DEFAULT_BITMAP_FACTORY);
+  }
+
+  public AccurateCardinalityAggregatorFactory(
       String name,
       String field,
       String nameSpace,
@@ -214,7 +222,7 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
   @Override
   public AggregatorFactory getCombiningFactory()
   {
-    return new BitmapAggregatorFactory(name, name);
+    return new AccurateCardinalityAggregatorFactory(name, name);
   }
 
   @Override
