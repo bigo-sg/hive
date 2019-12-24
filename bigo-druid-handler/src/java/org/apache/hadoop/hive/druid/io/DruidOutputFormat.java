@@ -182,6 +182,7 @@ public class DruidOutputFormat implements HiveOutputFormat<NullWritable, DruidWr
             null,
             null,
             indexSpec,
+            indexSpec,
             true,
             0,
             0,
