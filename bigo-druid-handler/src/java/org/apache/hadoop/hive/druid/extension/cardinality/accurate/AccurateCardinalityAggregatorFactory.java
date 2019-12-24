@@ -69,7 +69,9 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
   {
     this.name = name;
     this.field = field;
-    this.nameSpace = Preconditions.checkNotNull(nameSpace, "nameSpace can not be null");
+    this.nameSpace = openOneId == null
+            ? "noop"
+            : Preconditions.checkNotNull(nameSpace, "nameSpace can not be null");
     this.openOneId = openOneId == null
                     ? DEFAULT_OPENONEID
                     : openOneId;
@@ -79,8 +81,8 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
     this.longBitmapCollectorFactory = longBitmapCollectorFactory == null
                                       ? DEFAULT_BITMAP_FACTORY
                                       : longBitmapCollectorFactory;
-    VariableConfig.setNameSpace(this.nameSpace);
-    VariableConfig.setOpenOneId(this.openOneId);
+    VariableConfig.setNameSpace(field.getDimension(), this.nameSpace);
+    VariableConfig.setOpenOneId(field.getDimension(), this.openOneId);
     VariableConfig.setOneIdUrl(this.oneIdUrl);
   }
 
@@ -100,7 +102,8 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
           DimensionSpec field
   )
   {
-    this(name, field, null, null,  null, DEFAULT_BITMAP_FACTORY);
+    this(name, field, VariableConfig.getNameSpace(field.getDimension()),
+            VariableConfig.getOpenOneId(field.getDimension()), DEFAULT_ONEIDURL, DEFAULT_BITMAP_FACTORY);
   }
 
   public AccurateCardinalityAggregatorFactory(
@@ -108,7 +111,8 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
           String field
   )
   {
-    this(name, field, "", null, null,DEFAULT_BITMAP_FACTORY);
+    this(name, field, VariableConfig.getNameSpace(field), VariableConfig.getOpenOneId(field),
+            DEFAULT_ONEIDURL, DEFAULT_BITMAP_FACTORY);
   }
 
   public AccurateCardinalityAggregatorFactory(
@@ -132,7 +136,8 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
       LongBitmapCollectorFactory longBitmapCollectorFactory
   )
   {
-    this(name, new DefaultDimensionSpec(field, field, ValueType.LONG), nameSpace, openOneId, oneIdUrl, longBitmapCollectorFactory);
+    this(name, new DefaultDimensionSpec(field, field, ValueType.LONG), nameSpace, openOneId,
+            oneIdUrl, longBitmapCollectorFactory);
   }
 
   @JsonProperty
@@ -241,7 +246,8 @@ public class AccurateCardinalityAggregatorFactory extends AggregatorFactory
           @Override
           public AggregatorFactory apply(DimensionSpec input)
           {
-            return new AccurateCardinalityAggregatorFactory(input.getOutputName(), input, nameSpace, openOneId, oneIdUrl, longBitmapCollectorFactory);
+            return new AccurateCardinalityAggregatorFactory(input.getOutputName(), input, nameSpace, openOneId,
+                    oneIdUrl, longBitmapCollectorFactory);
           }
         }
     );

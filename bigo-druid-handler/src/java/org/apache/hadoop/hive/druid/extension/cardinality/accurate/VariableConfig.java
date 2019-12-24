@@ -1,33 +1,41 @@
 package org.apache.hadoop.hive.druid.extension.cardinality.accurate;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * @author jiangshequan
  * @title: VariableConfig
  * @date 2019/12/12 12:40
  */
 public class VariableConfig {
-  public static String nameSpace;
-  public static String openOneId;
+  public static Map<String, String> nameSpace;
+  public static Map<String, String> openOneId;
+  static {
+    nameSpace = new ConcurrentHashMap<>();
+    openOneId = new ConcurrentHashMap<>();
+  }
+
   public static String oneIdUrl;
   public static final byte accurateCardinalityCacheTypeId = 0x41;
   public static final byte bitmapAggCacheTypeId = 0x42;
 
-  public static void setNameSpace(String name)
+  public static void setNameSpace(String columnName, String name)
   {
-    nameSpace = name;
+    nameSpace.put(columnName, name);
   }
-  public static String getNameSpace()
+  public static String getNameSpace(String columnName)
   {
-    return nameSpace;
+    return nameSpace.get(columnName);
   }
 
-  public static void setOpenOneId(String open)
+  public static void setOpenOneId(String columnName, String open)
   {
-    openOneId = open;
+    openOneId.put(columnName, open);
   }
-  public static String getOpenOneId()
+  public static String getOpenOneId(String columnName)
   {
-    return openOneId;
+    return openOneId.get(columnName);
   }
 
   public static void setOneIdUrl(String url) { oneIdUrl = url; }
