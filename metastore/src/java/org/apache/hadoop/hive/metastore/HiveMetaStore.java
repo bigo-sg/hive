@@ -81,6 +81,7 @@ import org.apache.hadoop.hive.common.metrics.common.MetricsVariable;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars;
 import org.apache.hadoop.hive.metastore.api.*;
+import org.apache.hadoop.hive.metastore.cache.MetaCache;
 import org.apache.hadoop.hive.metastore.events.AddIndexEvent;
 import org.apache.hadoop.hive.metastore.events.AddPartitionEvent;
 import org.apache.hadoop.hive.metastore.events.AlterIndexEvent;
@@ -147,6 +148,7 @@ import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportFactory;
+import org.redisson.api.RReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,6 +238,8 @@ public class HiveMetaStore extends ThriftHiveMetastore {
 
     //For Metrics
     private int initDatabaseCount, initTableCount, initPartCount;
+
+    private MetaCache metaCache;
 
     private Warehouse wh; // hdfs warehouse
     private static final ThreadLocal<RawStore> threadLocalMS =
@@ -366,6 +370,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     public HMSHandler(String name, HiveConf conf, boolean init) throws MetaException {
       super(name);
       hiveConf = conf;
+      metaCache = new MetaCache(hiveConf);
       isInTest = HiveConf.getBoolVar(hiveConf, ConfVars.HIVE_IN_TEST);
       synchronized (HMSHandler.class) {
         if (threadPool == null) {
@@ -1906,6 +1911,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     @Override
     public void drop_table(final String dbname, final String name, final boolean deleteData)
         throws NoSuchObjectException, MetaException {
+      metaCache.invalidateCachedTable(dbname, name);
       drop_table_with_environment_context(dbname, name, deleteData, null);
     }
 
@@ -1956,7 +1962,32 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     @Deprecated
     public Table get_table(final String dbname, final String name) throws MetaException,
         NoSuchObjectException {
-      return getTableInternal(dbname, name, null);
+      Table table = null;
+      RReadWriteLock readWriteLock = metaCache.getReadWriteLock(metaCache.directJoin(
+              metaCache.LOCK_PREFIX,
+              metaCache.CACHE_TABLE_PROFIX,
+              dbname,
+              metaCache.SINGLE_DOT,
+              name
+      ));
+      readWriteLock.readLock().lock(metaCache.LOCK_SECONDS, TimeUnit.SECONDS);
+      try {
+        table = metaCache.getCachedTable(dbname, name);
+      } finally {
+        readWriteLock.readLock().unlock();
+      }
+      if (table == null) {
+        readWriteLock.writeLock().lock(metaCache.LOCK_SECONDS, TimeUnit.SECONDS);
+        try {
+          table = getTableInternal(dbname, name, null);
+          if (table != null) {
+            metaCache.cacheTable(dbname, name, table);
+          }
+        } finally {
+          readWriteLock.writeLock().unlock();
+        }
+      }
+      return table;
     }
 
     @Override
@@ -3946,6 +3977,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
         final Table newTable)
         throws InvalidOperationException, MetaException {
       // Do not set an environment context.
+      metaCache.invalidateCachedTable(dbname, name);
       alter_table_core(dbname,name, newTable, null);
     }
 
@@ -4073,7 +4105,28 @@ public class HiveMetaStore extends ThriftHiveMetastore {
       List<String> ret = null;
       Exception ex = null;
       try {
-        ret = getMS().getAllTables(dbname);
+        RReadWriteLock readWriteLock = metaCache.getReadWriteLock(metaCache.directJoin(
+                metaCache.LOCK_PREFIX,
+                metaCache.CACHE_ALL_TABLES_OF_DB_PROFIX,
+                dbname
+        ));
+        readWriteLock.readLock().lock(metaCache.LOCK_SECONDS, TimeUnit.SECONDS);
+        try {
+          ret = metaCache.getCachedAllTablesOfDb(dbname);
+        } finally {
+          readWriteLock.readLock().unlock();
+        }
+        if (ret == null || ret.isEmpty()) {
+          readWriteLock.writeLock().lock(metaCache.LOCK_SECONDS, TimeUnit.SECONDS);
+          try {
+            ret = getMS().getAllTables(dbname);
+            if (ret != null && !ret.isEmpty()) {
+              metaCache.cacheAllTablesOfDb(dbname, ret);
+            }
+          } finally {
+            readWriteLock.writeLock().unlock();
+          }
+        }
       } catch (Exception e) {
         ex = e;
         if (e instanceof MetaException) {

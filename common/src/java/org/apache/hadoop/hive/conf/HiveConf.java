@@ -948,6 +948,16 @@ public class HiveConf extends Configuration {
     METASTORE_METRICS("hive.metastore.metrics.enabled", false, "Enable metrics on the metastore."),
     METASTORE_INIT_METADATA_COUNT_ENABLED("hive.metastore.initial.metadata.count.enabled", true,
       "Enable a metadata count at metastore startup for metrics."),
+    METASTORE_REDIS_CACHE_ENABLED("hive.metastore.redis.cache.enabled", false,
+            "Enable a metadata redis cache."),
+    METASTORE_REDIS_CACHE_HOST("hive.metastore.redis.cache.host", "localhost",
+            "Metastore cache redis host."),
+    METASTORE_REDIS_CACHE_PORT("hive.metastore.redis.cache.port", 6379,
+            "metastore cache redis port."),
+    METASTORE_REDIS_CACHE_PASSWORD("hive.metastore.redis.cache.password", "",
+            "Metastore cache redis password."),
+    METASTORE_REDIS_CACHE_TTL("hive.metastore.redis.cache.ttl", 60 * 60,
+            "Metastore cache redis ttl."),
 
     // Metastore SSL settings
     HIVE_METASTORE_USE_SSL("hive.metastore.use.SSL", false,
