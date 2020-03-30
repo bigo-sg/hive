@@ -40,23 +40,35 @@ public class MetaCache {
     public static final String THREE_HORIZONTAL_BAR = "---";
     public static final String SINGLE_DOT = ".";
     public static final int LOCK_SECONDS = 30;
+    public static final String CACHE_ENABLED_KEY = "CACHE_ENABLED_KEY";
+
+    private JedisPool pool = null;
+    private Lock lock = new ReentrantLock();
+    private RedissonClient redisson;
+
     public MetaCache(HiveConf hiveConf) {
         this.hiveConf = hiveConf;
-        Config config = new Config();
-        if (cacheEnabled()) {
-            config.useClusterServers()
-                    .addNodeAddress(directJoin("redis://",
-                            hiveConf.get("hive.metastore.redis.cache.host"),
-                            ":",
-                            hiveConf.get("hive.metastore.redis.cache.port")));
-            redisson = Redisson.create(config);
+        if (hiveConf.get("hive.metastore.redis.cache.enabled").equals("true")) {
+            initCache();
         }
     }
 
-    JedisPool pool = null;
-    Lock lock = new ReentrantLock();
-    Random random = new Random(System.currentTimeMillis());
-    private RedissonClient redisson;
+    private void initCache() {
+        Config config = new Config();
+        config.useClusterServers()
+                .addNodeAddress(directJoin("redis://",
+                        hiveConf.get("hive.metastore.redis.cache.host"),
+                        ":",
+                        hiveConf.get("hive.metastore.redis.cache.port")));
+        redisson = Redisson.create(config);
+        try {
+            Jedis cache = getCacheFromPool();
+            cache.set(CACHE_ENABLED_KEY, "true");
+            cache.close();
+        } catch (Exception e) {
+            LOG.error("cache init failed!", e);
+        }
+    }
 
     public RReadWriteLock getReadWriteLock(String key) {
         return redisson.getReadWriteLock(key);
@@ -99,20 +111,32 @@ public class MetaCache {
         return bytes;
     }
 
-
     public boolean cacheEnabled() {
-        return hiveConf.get("hive.metastore.redis.cache.enabled").equals("true");
+        try {
+            Jedis cache = getCacheFromPool();
+            String data = null;
+            try {
+                data = cache.get(CACHE_ENABLED_KEY);
+            } finally {
+                cache.close();
+            }
+            if (null != data) {
+                return Boolean.valueOf(data);
+            }
+        } catch (Exception e) {
+            LOG.warn("get cache data failed!", e);
+        }
+        return false;
     }
 
     final static String CACHE_PARTITION_NAMES_PS_PROFIX = "CACHE_PARTITION_NAMES_PS_PROFIX_";
 
     private void invalidateCachedKey(String prefix, final String db_name,
                                      final String tbl_name, String failedMessage) {
-        if (!cacheEnabled()) return;
-        String key = directJoin(prefix, db_name, SINGLE_DOT, tbl_name);
         if (!cacheEnabled()) {
             return;
         }
+        String key = directJoin(prefix, db_name, SINGLE_DOT, tbl_name);
         RReadWriteLock readWriteLock = getReadWriteLock(directJoin(
                 LOCK_PREFIX,
                 prefix,
