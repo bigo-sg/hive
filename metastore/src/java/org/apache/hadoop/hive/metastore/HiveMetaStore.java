@@ -117,6 +117,7 @@ import org.apache.hadoop.hive.metastore.events.PreReadTableEvent;
 import org.apache.hadoop.hive.metastore.filemeta.OrcFileMetadataHandler;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.hadoop.hive.metastore.partition.spec.PartitionSpecProxy;
+import org.apache.hadoop.hive.metastore.rspool.RawStoreContainer;
 import org.apache.hadoop.hive.metastore.rspool.RawStorePool;
 import org.apache.hadoop.hive.metastore.txn.TxnStore;
 import org.apache.hadoop.hive.metastore.txn.TxnUtils;
@@ -240,12 +241,19 @@ public class HiveMetaStore extends ThriftHiveMetastore {
 
     private Warehouse wh; // hdfs warehouse
     private static final ThreadLocal<RawStore> threadLocalMS =
-        new ThreadLocal<RawStore>() {
-          @Override
-          protected RawStore initialValue() {
-            return null;
-          }
-        };
+            new ThreadLocal<RawStore>() {
+              @Override
+              protected RawStore initialValue() {
+                return null;
+              }
+            };
+    private static final ThreadLocal<RawStoreContainer> threadLocalMSContainer =
+            new ThreadLocal<RawStoreContainer>() {
+              @Override
+              protected RawStoreContainer initialValue() {
+                return null;
+              }
+            };
 
     private static final ThreadLocal<TxnStore> threadLocalTxn = new ThreadLocal<TxnStore>() {
       @Override
@@ -259,8 +267,9 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     }
 
     public static void removeRawStore() {
-      RawStorePool.getInstance().returnRawStore(threadLocalMS.get());
+      RawStorePool.getInstance().returnRawStore(threadLocalMSContainer.get());
       threadLocalMS.remove();
+      threadLocalMSContainer.remove();
     }
 
     // Thread local configuration is needed as many threads could make changes
@@ -588,11 +597,13 @@ public class HiveMetaStore extends ThriftHiveMetastore {
 
     public static RawStore getMSForConf(Configuration conf) throws MetaException {
       RawStore ms = threadLocalMS.get();
-      if (ms == null) {
-        ms = RawStorePool.getInstance(conf).getRawStore();
+      RawStoreContainer rawStoreContainer = threadLocalMSContainer.get();
+      if (ms == null || rawStoreContainer == null) {
+        rawStoreContainer = RawStorePool.getInstance(conf).getRawStore();
+        ms = rawStoreContainer.getRawStore();
         ms.verifySchema();
         threadLocalMS.set(ms);
-        ms = threadLocalMS.get();
+        threadLocalMSContainer.set(rawStoreContainer);
       }
       return ms;
     }

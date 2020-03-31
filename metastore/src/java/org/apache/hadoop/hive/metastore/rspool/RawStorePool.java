@@ -21,10 +21,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class RawStorePool {
 
     private static Lock lock = new ReentrantLock();
-    private static RawStorePool rawStorePool;
+    private static volatile RawStorePool rawStorePool;
     private Lock storeLock = new ReentrantLock();
     public static final Logger LOG = LoggerFactory.getLogger(RawStorePool.class);
-    List<RawStore> rawStores = new LinkedList<>();
+    List<RawStoreContainer> rawStoreContainers = new LinkedList<>();
 
     Configuration conf;
     private RawStorePool(Configuration conf) {
@@ -56,34 +56,39 @@ public class RawStorePool {
         return rawStorePool;
     }
 
-    public RawStore getRawStore() {
-        RawStore rawStore = null;
+    public RawStoreContainer getRawStore() {
+        RawStoreContainer rawStoreContainer = null;
         storeLock.lock();
         try {
-            if (rawStores.isEmpty()) {
-                rawStore = newRawStoreForConf(conf);
+            if (rawStoreContainers.isEmpty()) {
+                rawStoreContainer = newRawStoreForConf(conf);
             } else {
-                rawStore = rawStores.get(0);
-                rawStores.remove(0);
+                rawStoreContainer = rawStoreContainers.get(0);
+                rawStoreContainers.remove(0);
             }
         } catch (MetaException e) {
             LOG.error("get RawStore failed!");
         } finally {
             storeLock.unlock();
         }
-        return rawStore;
+        return rawStoreContainer;
     }
 
-    public void returnRawStore(RawStore rawStore) {
+    public void returnRawStore(RawStoreContainer rawStoreContainer) {
+        if (rawStoreContainers.size() > 1000 ||
+                rawStoreContainer.getLivedTimeMillis() > 10 * 60 * 60 * 1000) {
+            rawStoreContainer.getRawStore().shutdown();
+            return;
+        }
         storeLock.lock();
         try {
-            rawStores.add(rawStore);
+            rawStoreContainers.add(rawStoreContainer);
         } finally {
             storeLock.unlock();
         }
     }
 
-    private static RawStore newRawStoreForConf(Configuration conf) throws MetaException {
+    private static RawStoreContainer newRawStoreForConf(Configuration conf) throws MetaException {
         HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
         String rawStoreClassName = hiveConf.getVar(HiveConf.ConfVars.METASTORE_RAW_STORE_IMPL);
         LOG.info("Opening raw store with implementation class:" + rawStoreClassName);
@@ -94,16 +99,12 @@ public class RawStorePool {
                         ((Class<? extends RawStore>) MetaStoreUtils.getClass(rawStoreClassName))
                                 .newInstance();
                 rs.setConf(hiveConf);
-                return rs;
+                return new RawStoreContainer(rs);
             } catch (Exception e) {
                 LOG.error("Unable to instantiate raw store directly in fastpath mode", e);
                 throw new RuntimeException(e);
             }
         }
-        return RawStoreProxy.getProxy(hiveConf, conf, rawStoreClassName, 0);
-    }
-
-    public Configuration getConf() {
-        return conf;
+        return new RawStoreContainer(RawStoreProxy.getProxy(hiveConf, conf, rawStoreClassName, 0));
     }
 }
