@@ -117,6 +117,7 @@ import org.apache.hadoop.hive.metastore.events.PreReadTableEvent;
 import org.apache.hadoop.hive.metastore.filemeta.OrcFileMetadataHandler;
 import org.apache.hadoop.hive.metastore.messaging.EventMessage.EventType;
 import org.apache.hadoop.hive.metastore.partition.spec.PartitionSpecProxy;
+import org.apache.hadoop.hive.metastore.rspool.RawStorePool;
 import org.apache.hadoop.hive.metastore.txn.TxnStore;
 import org.apache.hadoop.hive.metastore.txn.TxnUtils;
 import org.apache.hadoop.hive.serde2.Deserializer;
@@ -258,6 +259,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     }
 
     public static void removeRawStore() {
+      RawStorePool.getInstance().returnRawStore(threadLocalMS.get());
       threadLocalMS.remove();
     }
 
@@ -587,7 +589,7 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     public static RawStore getMSForConf(Configuration conf) throws MetaException {
       RawStore ms = threadLocalMS.get();
       if (ms == null) {
-        ms = newRawStoreForConf(conf);
+        ms = RawStorePool.getInstance(conf).getRawStore();
         ms.verifySchema();
         threadLocalMS.set(ms);
         ms = threadLocalMS.get();
@@ -7272,12 +7274,8 @@ public class HiveMetaStore extends ThriftHiveMetastore {
     RawStore rs = HMSHandler.getRawStore();
     if (rs != null) {
       HMSHandler.logInfo("Cleaning up thread local RawStore...");
-      try {
-        rs.shutdown();
-      } finally {
-        HMSHandler.threadLocalConf.remove();
-        HMSHandler.removeRawStore();
-      }
+      HMSHandler.threadLocalConf.remove();
+      HMSHandler.removeRawStore();
       HMSHandler.logInfo("Done cleaning up thread local RawStore");
     }
   }
