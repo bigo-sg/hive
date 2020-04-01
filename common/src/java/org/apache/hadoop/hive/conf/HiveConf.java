@@ -844,6 +844,8 @@ public class HiveConf extends Configuration {
         "work for all queries on your datastore. If all SQL queries fail (for example, your\n" +
         "metastore is backed by MongoDB), you might want to disable this to save the\n" +
         "try-and-fall-back cost."),
+    METASTORE_TEST_DIRECT_INIT("hive.metastore.test.direct.init", false,
+            ""),
     METASTORE_DIRECT_SQL_PARTITION_BATCH_SIZE("hive.metastore.direct.sql.batch.size", 0,
         "Batch size for partition and other object retrieval from the underlying DB in direct\n" +
         "SQL. For some DBs like Oracle and MSSQL, there are hardcoded or perf-based limitations\n" +

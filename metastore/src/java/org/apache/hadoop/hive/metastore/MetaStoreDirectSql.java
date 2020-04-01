@@ -141,7 +141,8 @@ class MetaStoreDirectSql {
           + " Disabling directSQL as it uses hand-hardcoded SQL with that assumption.");
       isCompatibleDatastore = false;
     } else {
-      isCompatibleDatastore = ensureDbInit() && runTestQuery();
+      isCompatibleDatastore = runTestQuery() && HiveConf.getBoolVar(conf, ConfVars.METASTORE_TEST_DIRECT_INIT) &&
+              ensureDbInit();
       if (isCompatibleDatastore) {
         LOG.info("Using direct SQL, underlying DB is " + dbType);
       }
