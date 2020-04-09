@@ -141,8 +141,11 @@ class MetaStoreDirectSql {
           + " Disabling directSQL as it uses hand-hardcoded SQL with that assumption.");
       isCompatibleDatastore = false;
     } else {
-      isCompatibleDatastore = runTestQuery() && HiveConf.getBoolVar(conf, ConfVars.METASTORE_TEST_DIRECT_INIT) &&
-              ensureDbInit();
+      boolean pass = runTestQuery();
+      if (HiveConf.getBoolVar(conf, ConfVars.METASTORE_TEST_DIRECT_INIT)) {
+        pass = pass && ensureDbInit();
+      }
+      isCompatibleDatastore = pass;
       if (isCompatibleDatastore) {
         LOG.info("Using direct SQL, underlying DB is " + dbType);
       }
@@ -209,7 +212,7 @@ class MetaStoreDirectSql {
     }
   }
 
-  private boolean runTestQuery() {
+  protected boolean runTestQuery() {
     Transaction tx = pm.currentTransaction();
     boolean doCommit = false;
     if (!tx.isActive()) {

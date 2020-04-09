@@ -97,6 +97,11 @@ public class DummyRawStoreForJdoConnection implements RawStore {
   }
 
   @Override
+  public boolean runTestQuery() {
+    return false;
+  }
+
+  @Override
   public boolean openTransaction() {
 
     return false;

@@ -25,6 +25,8 @@ public class RawStorePool {
     private Lock storeLock = new ReentrantLock();
     public static final Logger LOG = LoggerFactory.getLogger(RawStorePool.class);
     List<RawStoreContainer> rawStoreContainers = new LinkedList<>();
+    public static final int RETRY_TIMES = 10;
+    public static final String TRY_DB = "tmp";
 
     Configuration conf;
     private RawStorePool(Configuration conf) {
@@ -46,7 +48,7 @@ public class RawStorePool {
     }
 
     //
-    // this method only can call when return rs:
+    // This method can only be called for returning rs:
     // RawStorePool.getInstance().returnRawStore(rawStore)
     //
     public static RawStorePool getInstance() {
@@ -58,18 +60,50 @@ public class RawStorePool {
 
     public RawStoreContainer getRawStore() {
         RawStoreContainer rawStoreContainer = null;
-        storeLock.lock();
-        try {
-            if (rawStoreContainers.isEmpty()) {
-                rawStoreContainer = newRawStoreForConf(conf);
-            } else {
-                rawStoreContainer = rawStoreContainers.get(0);
-                rawStoreContainers.remove(0);
+        boolean ok = false;
+        for (int i = 0; i < RETRY_TIMES; ++i) {
+            storeLock.lock();
+            try {
+                if (rawStoreContainers.isEmpty()) {
+                    rawStoreContainer = newRawStoreForConf(conf);
+                } else {
+                    rawStoreContainer = rawStoreContainers.get(0);
+                    rawStoreContainers.remove(0);
+                }
+            } catch (MetaException e) {
+                LOG.error("get RawStore failed!", e);
+            } finally {
+                storeLock.unlock();
             }
-        } catch (MetaException e) {
-            LOG.error("get RawStore failed!");
-        } finally {
-            storeLock.unlock();
+            long t1 = System.currentTimeMillis();
+            try {
+                ok = rawStoreContainer.getRawStore().runTestQuery();
+                long t2 = System.currentTimeMillis();
+                LOG.info("test jdbc connection cost " + (t2 - t1) + "ms");
+                if (ok) break;
+            } catch (Exception e) {
+                long t2 = System.currentTimeMillis();
+                LOG.warn("test jdbc connection cost " + (t2 - t1) + "ms");
+            }
+            try {
+                rawStoreContainer.getRawStore().getDatabase(TRY_DB);
+                ok = true;
+                long t2 = System.currentTimeMillis();
+                LOG.info("test jdbc connection cost " + (t2 - t1) + "ms");
+                break;
+            } catch (Exception e) {
+                long t2 = System.currentTimeMillis();
+                LOG.warn("test jdbc connection cost " + (t2 - t1) + "ms", e);
+            }
+            rawStoreContainer.getRawStore().shutdown();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e1) {
+                LOG.warn("sleep error", e1);
+            }
+        }
+        if (!ok) {
+            throw new RuntimeException("get RawStore failed after retry " + RETRY_TIMES + " times");
         }
         return rawStoreContainer;
     }

@@ -557,7 +557,15 @@ public class ObjectStore implements RawStore, Configurable {
     }
   }
 
-  /**
+    @Override
+    public boolean runTestQuery() {
+        if (HiveConf.getBoolVar(getConf(), ConfVars.METASTORE_TRY_DIRECT_SQL)) {
+            return directSql.runTestQuery();
+        }
+        return false;
+    }
+
+    /**
    * Opens a new one or the one already created Every call of this function must
    * have corresponding commit or rollback function call
    *
