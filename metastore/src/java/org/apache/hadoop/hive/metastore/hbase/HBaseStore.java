@@ -120,6 +120,11 @@ public class HBaseStore implements RawStore {
   }
 
   @Override
+  public boolean runTestQuery() {
+    return false;
+  }
+
+  @Override
   public boolean openTransaction() {
     if (txnNestLevel++ <= 0) {
       LOG.debug("Opening HBase transaction");

@@ -117,7 +117,12 @@ public class DummyRawStoreControlledCommit implements RawStore, Configurable {
     objectStore.shutdown();
   }
 
-  @Override
+    @Override
+    public boolean runTestQuery() {
+        return false;
+    }
+
+    @Override
   public boolean openTransaction() {
     return objectStore.openTransaction();
   }
