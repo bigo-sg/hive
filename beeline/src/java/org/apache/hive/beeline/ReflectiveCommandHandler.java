@@ -26,6 +26,8 @@ import jline.console.completer.Completer;
 
 import org.apache.hadoop.fs.shell.Command;
 
+import java.sql.SQLException;
+
 /**
  * A {@link Command} implementation that uses reflection to
  * determine the method to dispatch the command.
@@ -46,7 +48,7 @@ public class ReflectiveCommandHandler extends AbstractCommandHandler {
     this.beeLine = beeLine;
   }
 
-  public boolean execute(String line) {
+  public int execute(String line) {
     lastException = null;
     ClientHook hook = ClientCommandHookFactory.get().getHook(beeLine, line);
 
@@ -61,10 +63,15 @@ public class ReflectiveCommandHandler extends AbstractCommandHandler {
         hook.postHook(beeLine);
       }
 
-      return result;
+      return result?BeeLine.ERRNO_OK:BeeLine.ERRNO_OTHER;
     } catch (Throwable e) {
       lastException = e;
-      return beeLine.error(e);
+      if (e instanceof SQLException) {
+        if (BeeLine.retrySqlExceptionMessages.contains(e.getMessage())) {
+          return BeeLine.RETRY_CODE;
+        }
+      }
+      return BeeLine.ERRNO_OTHER;
     }
   }
 }

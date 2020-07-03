@@ -74,6 +74,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.google.common.collect.ImmutableSet;
 import jline.console.completer.Completer;
 import jline.console.completer.StringsCompleter;
 import jline.console.completer.FileNameCompleter;
@@ -156,9 +157,9 @@ public class BeeLine implements Closeable {
   private static final String SCRIPT_OUTPUT_PREFIX = ">>>";
   private static final int SCRIPT_OUTPUT_PAD_SIZE = 5;
 
-  private static final int ERRNO_OK = 0;
-  private static final int ERRNO_ARGS = 1;
-  private static final int ERRNO_OTHER = 2;
+  public static final int ERRNO_OK = 0;
+  public static final int ERRNO_ARGS = 1;
+  public static final int ERRNO_OTHER = 2;
 
   private static final String HIVE_VAR_PREFIX = "--hivevar";
   private static final String HIVE_CONF_PREFIX = "--hiveconf";
@@ -176,6 +177,13 @@ public class BeeLine implements Closeable {
       "xmlattr", new XMLAttributeOutputFormat(this),
       "xmlelements", new XMLElementOutputFormat(this),
   });
+
+  public final static Set<String> retrySqlExceptionMessages = ImmutableSet.of(
+          "Error executing query",
+          "Error fetching version from server",
+          "Error fetching results"
+  );
+  public final static int RETRY_CODE = 66666666;
 
   private List<String> supportedLocalDriver =
     new ArrayList<String>(Arrays.asList("com.mysql.jdbc.Driver", "org.postgresql.Driver"));
@@ -756,7 +764,7 @@ public class BeeLine implements Closeable {
       for (Iterator<String> i = commands.iterator(); i.hasNext(); ) {
         String command = i.next().toString();
         debug(loc("executing-command", command));
-        if (!dispatch(command)) {
+        if (dispatch(command) == ERRNO_OTHER) {
           code++;
         }
       }
@@ -804,7 +812,7 @@ public class BeeLine implements Closeable {
       for (Iterator<String> i = commands.iterator(); i.hasNext();) {
         String command = i.next().toString();
         debug(loc("executing-command", command));
-        if (!dispatch(command)) {
+        if (dispatch(command) == ERRNO_OTHER) {
           code++;
         }
       }
@@ -873,7 +881,7 @@ public class BeeLine implements Closeable {
         comForDebug = constructCmdUrl(url, user, driver, true);
       }
       debug(comForDebug);
-      return dispatch(com);
+      return dispatch(com) == ERRNO_OK;
     }
     // load property file
     String propertyFile = cl.getOptionValue("property-file");
@@ -883,7 +891,7 @@ public class BeeLine implements Closeable {
       } catch (IOException e) {
         handleException(e);
       }
-      if (!dispatch("!properties " + propertyFile)) {
+      if (dispatch("!properties " + propertyFile) == ERRNO_OTHER) {
         exit = true;
         return false;
       }
@@ -1059,7 +1067,7 @@ public class BeeLine implements Closeable {
       error(e);
       return false;
     }
-    return dispatch("!connect " + url);
+    return dispatch("!connect " + url) == ERRNO_OK;
   }
 
 
@@ -1118,16 +1126,12 @@ public class BeeLine implements Closeable {
   }
 
   private int embeddedConnect() {
-    if (!execCommandWithPrefix("!connect " + Utils.URL_PREFIX + " '' ''")) {
-      return ERRNO_OTHER;
-    } else {
-      return ERRNO_OK;
-    }
+    return execCommandWithPrefix("!connect " + Utils.URL_PREFIX + " '' ''");
   }
 
   private int connectDBInEmbededMode() {
     if (dbName != null && !dbName.isEmpty()) {
-      if (!dispatch("use " + dbName + ";")) {
+      if (dispatch("use " + dbName + ";") == ERRNO_OTHER) {
         return ERRNO_OTHER;
       }
     }
@@ -1184,7 +1188,7 @@ public class BeeLine implements Closeable {
           line = line.trim();
         }
 
-        if (!dispatch(line)) {
+        if (dispatch(line) == ERRNO_OTHER) {
           lastExecutionResult = ERRNO_OTHER;
           if (exitOnError) break;
         } else if (line != null) {
@@ -1258,7 +1262,7 @@ public class BeeLine implements Closeable {
    * @param line
    * @return
    */
-  public boolean execCommandWithPrefix(String line) {
+  public int execCommandWithPrefix(String line) {
     Map<String, CommandHandler> cmdMap = new TreeMap<String, CommandHandler>();
     line = line.substring(1);
     for (int i = 0; i < commandHandlers.length; i++) {
@@ -1269,13 +1273,15 @@ public class BeeLine implements Closeable {
     }
 
     if (cmdMap.size() == 0) {
-      return error(loc("unknown-command", line));
+      error(loc("unknown-command", line));
+      return BeeLine.ERRNO_OTHER;
     }
     if (cmdMap.size() > 1) {
       // any exact match?
       CommandHandler handler = cmdMap.get(line);
       if (handler == null) {
-        return error(loc("multiple-matches", cmdMap.keySet().toString()));
+        error(loc("multiple-matches", cmdMap.keySet().toString()));
+        return BeeLine.ERRNO_OTHER;
       }
       return handler.execute(line);
     }
@@ -1289,19 +1295,19 @@ public class BeeLine implements Closeable {
    *          the command-line to dispatch
    * @return true if the command was "successful"
    */
-  boolean dispatch(String line) {
+  int dispatch(String line) {
     if (line == null) {
       // exit
       exit = true;
-      return true;
+      return ERRNO_OK;
     }
 
     if (line.trim().length() == 0) {
-      return true;
+      return ERRNO_OK;
     }
 
     if (isComment(line)) {
-      return true;
+      return ERRNO_OK;
     }
 
     line = line.trim();
@@ -2261,7 +2267,7 @@ public class BeeLine implements Closeable {
         info(getColorBuffer().pad(SCRIPT_OUTPUT_PREFIX, SCRIPT_OUTPUT_PAD_SIZE).append(cmd));
         // if we do not force script execution, abort
         // when a failure occurs.
-        if (dispatch(cmd) || getOpts().getForce()) {
+        if (dispatch(cmd) == ERRNO_OK || getOpts().getForce()) {
           ++successCount;
         } else {
           error(loc("abort-on-error", cmd));

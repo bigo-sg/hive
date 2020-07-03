@@ -732,7 +732,7 @@ public class Commands {
   }
 
   public boolean sql(String line) {
-    return execute(line, false, false);
+    return execute(line, false, false) == BeeLine.ERRNO_OK;
   }
 
   /**
@@ -896,7 +896,7 @@ public class Commands {
       String[] cmds = lines.split(";");
       for (String c : cmds) {
         c = c.trim();
-        if (!executeInternal(c, false)) {
+        if (executeInternal(c, false) != BeeLine.ERRNO_OK) {
           return false;
         }
       }
@@ -924,23 +924,23 @@ public class Commands {
 
   // Return false only occurred error when execution the sql and the sql should follow the rules
   // of beeline.
-  private boolean executeInternal(String sql, boolean call) {
+  private int executeInternal(String sql, boolean call) {
     if (!beeLine.isBeeLine()) {
       sql = cliToBeelineCmd(sql);
     }
 
     if (sql == null || sql.length() == 0) {
-      return true;
+      return BeeLine.ERRNO_OTHER;
     }
 
     if (beeLine.isComment(sql)) {
       //skip this and rest cmds in the line
-      return true;
+      return BeeLine.ERRNO_OK;
     }
 
     // is source CMD
     if (isSourceCMD(sql)) {
-      return sourceFile(sql);
+      return sourceFile(sql)?BeeLine.ERRNO_OK:BeeLine.ERRNO_OTHER;
     }
 
     if (sql.startsWith(BeeLine.COMMAND_PREFIX)) {
@@ -956,11 +956,11 @@ public class Commands {
     // batch statements?
     if (beeLine.getBatch() != null) {
       beeLine.getBatch().add(sql);
-      return true;
+      return BeeLine.ERRNO_OK;
     }
 
     if (!(beeLine.assertConnection())) {
-      return false;
+      return BeeLine.ERRNO_OTHER;
     }
 
     ClientHook hook = ClientCommandHookFactory.get().getHook(beeLine, sql);
@@ -1039,13 +1039,19 @@ public class Commands {
         }
       }
     } catch (Exception e) {
-      return beeLine.error(e);
+      beeLine.error(e);
+      if (e instanceof SQLException) {
+        if (BeeLine.retrySqlExceptionMessages.contains(e.getMessage())) {
+          return BeeLine.RETRY_CODE;
+        }
+      }
+      return BeeLine.ERRNO_OTHER;
     }
     beeLine.showWarnings();
     if (hook != null) {
       hook.postHook(beeLine);
     }
-    return true;
+    return BeeLine.ERRNO_OK;
   }
 
   //startQuote use array type in order to pass int type as input/output parameter.
@@ -1130,7 +1136,7 @@ public class Commands {
     return true;
   }
 
-  public boolean sql(String line, boolean entireLineAsCommand) {
+  public int sql(String line, boolean entireLineAsCommand) {
     return execute(line, false, entireLineAsCommand);
   }
 
@@ -1176,12 +1182,12 @@ public class Commands {
   }
 
   public boolean call(String line) {
-    return execute(line, true, false);
+    return execute(line, true, false) == BeeLine.ERRNO_OK;
   }
 
-  private boolean execute(String line, boolean call, boolean entireLineAsCommand) {
+  private int execute(String line, boolean call, boolean entireLineAsCommand) {
     if (line == null || line.length() == 0) {
-      return false; // ???
+      return BeeLine.ERRNO_OTHER; // ???
     }
 
     // ### FIXME: doing the multi-line handling down here means
@@ -1195,6 +1201,11 @@ public class Commands {
       line = handleMultiLineCmd(line);
     } catch (Exception e) {
       beeLine.handleException(e);
+      if (e instanceof SQLException) {
+        if (BeeLine.retrySqlExceptionMessages.contains(e.getMessage())) {
+          return BeeLine.RETRY_CODE;
+        }
+      }
     }
 
     line = line.trim();
@@ -1202,12 +1213,10 @@ public class Commands {
     for (int i = 0; i < cmdList.size(); i++) {
       String sql = cmdList.get(i).trim();
       if (sql.length() != 0) {
-        if (!executeInternal(sql, call)) {
-          return false;
-        }
+        return executeInternal(sql, call);
       }
     }
-    return true;
+    return BeeLine.ERRNO_OK;
   }
 
   /**

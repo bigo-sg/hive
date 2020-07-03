@@ -67,7 +67,7 @@ interface CommandHandler {
    * @param line
    *          the full command line to execute.
    */
-  public boolean execute(String line);
+  public int execute(String line);
 
 
   /**

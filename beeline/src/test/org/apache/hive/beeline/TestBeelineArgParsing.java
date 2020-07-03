@@ -68,7 +68,7 @@ public class TestBeelineArgParsing {
     List<String> queries = new ArrayList<String>();
 
     @Override
-    boolean dispatch(String command) {
+    int dispatch(String command) {
       String connectCommand = "!connect";
       String propertyCommand = "!properties";
       if (command.startsWith(connectCommand)) {
@@ -78,7 +78,7 @@ public class TestBeelineArgParsing {
       } else {
         this.queries.add(command);
       }
-      return true;
+      return BeeLine.ERRNO_OK;
     }
 
     public boolean addlocaldrivername(String driverName) {
