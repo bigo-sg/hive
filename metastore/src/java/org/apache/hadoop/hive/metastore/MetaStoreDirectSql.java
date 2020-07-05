@@ -444,6 +444,7 @@ class MetaStoreDirectSql {
   private List<Partition> getPartitionsViaSqlFilterInternal(String dbName, String tblName,
       final Boolean isView, String sqlFilter, List<? extends Object> paramsForFilter,
       List<String> joinsForFilter, Integer max) throws MetaException {
+    long startTime = System.currentTimeMillis();
     boolean doTrace = LOG.isDebugEnabled();
     final String dbNameLcase = dbName.toLowerCase(), tblNameLcase = tblName.toLowerCase();
     // We have to be mindful of order during filtering if we are not returning all partitions.
@@ -465,6 +466,9 @@ class MetaStoreDirectSql {
       + "     and \"DBS\".\"NAME\" = ? "
       + join(joinsForFilter, ' ')
       + (StringUtils.isBlank(sqlFilter) ? "" : (" where " + sqlFilter)) + orderForFilter;
+    Exception e = new Exception("for debug");
+    LOG.info("query is:" + queryText, e);
+    e.printStackTrace();
     Object[] params = new Object[paramsForFilter.size() + 2];
     params[0] = tblNameLcase;
     params[1] = dbNameLcase;
@@ -492,6 +496,8 @@ class MetaStoreDirectSql {
     });
 
     query.closeAll();
+    long end = System.currentTimeMillis();
+    LOG.info("invoked List<Partition> getPartitionsViaSqlFilterInternal,cost:" + (end - startTime) + "ms");
     return result;
   }
 
