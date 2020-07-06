@@ -105,8 +105,10 @@ class BeeLineOpts implements Completer {
 
   private String scriptFile = null;
   private String[] initFiles = null;
-  private String authType = "true";
-  private String enableHive = null; //add for presto cli
+  private String authType = null;
+  private String enableHive = "true"; //add for presto cli
+  private String clientTags = "";
+  private String clientInfo = "";
   private char delimiterForDSV = DEFAULT_DELIMITER_FOR_DSV;
 
   private Map<String, String> hiveVariables = new HashMap<String, String>();
@@ -123,6 +125,22 @@ class BeeLineOpts implements Completer {
 
   public void setEnableHive(String enableHive) {
     this.enableHive = enableHive;
+  }
+
+  public String getClientTags() {
+    return clientTags;
+  }
+
+  public void setClientTags(String clientTags) {
+    this.clientTags = clientTags;
+  }
+
+  public String getClientInfo() {
+    return clientInfo;
+  }
+
+  public void setClientInfo(String clientInfo) {
+    this.clientInfo = clientInfo;
   }
 
   @Retention(RetentionPolicy.RUNTIME)

@@ -166,6 +166,8 @@ public class BeeLine implements Closeable {
   private static final String PROP_FILE_PREFIX = "--property-file";
   static final String PASSWD_MASK = "[passwd stripped]";
 
+  private static int ERROR_CODE = 0;
+
   private final Map<Object, Object> formats = map(new Object[] {
       "vertical", new VerticalOutputFormat(this),
       "table", new TableOutputFormat(this),
@@ -410,8 +412,24 @@ public class BeeLine implements Closeable {
             .withArgName("enablehive")
             .withDescription("enablehive")
             .create('k'));
-  }
 
+
+    // -clientTags
+    options.addOption(OptionBuilder
+            .hasArg()
+            .withArgName("client-tags")
+            .withDescription("client-tags")
+            .create('t'));
+
+
+    // -clientInfo
+    options.addOption(OptionBuilder
+            .hasArg()
+            .withArgName("client-info")
+            .withDescription("client-info")
+            .create('o'));
+
+  }
 
   static Manifest getManifest() throws IOException {
     URL base = BeeLine.class.getResource("/META-INF/MANIFEST.MF");
@@ -851,9 +869,19 @@ public class BeeLine implements Closeable {
     driver = cl.getOptionValue("d");
     auth = cl.getOptionValue("a");
     user = cl.getOptionValue("n");
+
     String enableHive = cl.getOptionValue("k");
-    getOpts().setEnableHive(enableHive);
+    if (enableHive != null && (enableHive.toLowerCase().equals("true") || enableHive.toLowerCase().equals("false"))) {
+      getOpts().setEnableHive(enableHive);
+    }
+
     getOpts().setAuthType(auth);
+
+    String clientTags = cl.getOptionValue("t");
+    String clientInfo = cl.getOptionValue("o");
+    getOpts().setClientTags(clientTags);
+    getOpts().setClientInfo(clientInfo);
+
     if (cl.hasOption("w")) {
       pass = obtainPasswordFromFile(cl.getOptionValue("w"));
     } else {
@@ -1431,7 +1459,6 @@ public class BeeLine implements Closeable {
     return false;
   }
 
-
   boolean error(Throwable t) {
     handleException(t);
     return false;
@@ -1968,6 +1995,9 @@ public class BeeLine implements Closeable {
     if (getOpts().getVerbose()) {
       e.printStackTrace(getErrorStream());
     }
+
+    ERROR_CODE = e.getErrorCode();
+    System.out.println("SQLException, error code: " + ERROR_CODE + ", error message: " + e.getMessage());
 
     if (!getOpts().getShowNestedErrs()) {
       return;

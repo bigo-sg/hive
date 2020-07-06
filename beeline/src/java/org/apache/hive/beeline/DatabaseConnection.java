@@ -152,6 +152,8 @@ class DatabaseConnection {
     if (this.connection instanceof PrestoConnection) {
       PrestoConnection prestoConnection = (PrestoConnection)this.connection;
       prestoConnection.setSessionProperty("enable_hive_syntax", beeLine.getOpts().getEnableHive());
+      prestoConnection.setClientInfo("ClientInfo", beeLine.getOpts().getClientInfo());
+      prestoConnection.setClientInfo("ClientTags", beeLine.getOpts().getClientTags());
     }
     setDatabaseMetaData(getConnection().getMetaData());
 
