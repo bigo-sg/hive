@@ -75,6 +75,8 @@ public interface RawStore extends Configurable {
 
   public abstract void shutdown();
 
+  public abstract boolean runTestQuery();
+
   /**
    * Opens a new one or the one already created Every call of this function must
    * have corresponding commit or rollback function call
