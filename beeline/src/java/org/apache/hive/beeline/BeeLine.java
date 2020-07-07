@@ -1065,9 +1065,11 @@ public class BeeLine implements Closeable {
     }
 
     if (getOpts().isHelpAsked()) {
+      info("bigo debug:execute help");
       return 0;
     }
     if (getOpts().getScriptFile() != null) {
+      info("bigo debug:executeFile(getOpts().getScriptFile())");
       return executeFile(getOpts().getScriptFile());
     }
     try {
@@ -1075,7 +1077,9 @@ public class BeeLine implements Closeable {
     } catch (Exception e) {
       // ignore
     }
-    return execute(reader, false);
+    int result = execute(reader, false);
+    info("bigo debug:executing result " + result);
+    return result;
   }
 
   /*
@@ -1216,14 +1220,21 @@ public class BeeLine implements Closeable {
           line = line.trim();
         }
 
-        if (dispatch(line) == ERRNO_OTHER) {
-          lastExecutionResult = ERRNO_OTHER;
+        lastExecutionResult = dispatch(line);
+        if (lastExecutionResult != ERRNO_OK) {
           if (exitOnError) break;
         } else if (line != null) {
+          info("bigo debug:line != null");
           lastExecutionResult = ERRNO_OK;
         }
 
       } catch (Throwable t) {
+        if (t instanceof SQLException) {
+          error("bigo debug:"+t.getMessage());
+          if (retrySqlExceptionMessages.contains(t.getMessage())) {
+            return RETRY_CODE;
+          }
+        }
         handleException(t);
         return ERRNO_OTHER;
       }
